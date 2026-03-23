@@ -77,11 +77,11 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     float dp = w / 360f;
 
     float padding = 12 * dp;
-    float mapSize = 75 * dp;
+    float mapSize = 60 * dp;
     float spacing = 10 * dp;
 
     float cardWidth = w * 0.94f;
-    float cardHeight = mapSize + (padding * 2);
+    float cardHeight = mapSize + (padding * 1.5f);
 
     float left = (w - cardWidth) / 2f;
     float top = h - cardHeight - (20 * dp);
@@ -124,31 +124,92 @@ try {
     bg.setColor(Color.parseColor("#99000000"));
     canvas.drawRoundRect(
             new RectF(left, top, left + cardWidth, top + cardHeight),
-            25 * dp, 25 * dp, bg
+            12 * dp, 12 * dp, bg
     );
+// === HEADER ATAS (GPS MAP CAMERA) ===
+TextPaint topText = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+topText.setColor(Color.WHITE);
+topText.setTextSize(11 * dp);
+topText.setTypeface(Typeface.DEFAULT_BOLD);
 
+float margin = 16 * dp;
+float textWidth = topText.measureText("GPS Map Camera");
+
+float xText = w - textWidth - margin;
+float yText = top - (8 * dp);
+
+            // 🔥 ICON DULU
+try {
+    Bitmap icon = BitmapFactory.decodeStream(form.openAsset("camera_icon.png"));
+    if (icon != null) {
+        float iconSize = 14 * dp;
+
+        float iconX = xText - iconSize - (6 * dp);
+        float iconY = yText - iconSize + (4 * dp);
+
+        canvas.drawBitmap(icon, null,
+                new RectF(iconX, iconY, iconX + iconSize, iconY + iconSize),
+                null);
+    }
+} catch (Exception e) {
+    e.printStackTrace();
+}
+canvas.drawText("GPS Map Camera", xText, yText, topText);
+            
+
+            
     // === MAP (ROUNDED) ===
-    RectF mapRect = new RectF(
-            left + padding,
-            top + padding,
-            left + padding + mapSize,
-            top + padding + mapSize
-    );
+    
+RectF mapRect = new RectF(
+        left + padding,
+        top + padding,
+        left + padding + mapSize,
+        top + padding + mapSize
+);
 
-    try {
-        URL url = new URL("https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=17&l=sat&size=300,300");
-        Bitmap map = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+try {
+    URL url = new URL("https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=17&l=sat&size=300,300");
+    Bitmap map = BitmapFactory.decodeStream(url.openConnection().getInputStream());
 
-        if (map != null) {
-            Path path = new Path();
-            path.addRoundRect(mapRect, 12 * dp, 12 * dp, Path.Direction.CW);
+    if (map != null) {
+        // === DRAW MAP ROUNDED ===
+        Path path = new Path();
+        path.addRoundRect(mapRect, 12 * dp, 12 * dp, Path.Direction.CW);
 
-            canvas.save();
-            canvas.clipPath(path);
-            canvas.drawBitmap(map, null, mapRect, null);
-            canvas.restore();
+        canvas.save();
+        canvas.clipPath(path);
+        canvas.drawBitmap(map, null, mapRect, null);
+        canvas.restore();
+
+        // === DRAW PIN ===
+        try {
+            Bitmap pin = BitmapFactory.decodeStream(form.openAsset("map_pin.png"));
+            if (pin != null) {
+                float pinSize = mapSize * 0.35f;
+
+                float cx = mapRect.centerX();
+                float cy = mapRect.centerY();
+
+                canvas.drawBitmap(
+                        pin,
+                        null,
+                        new RectF(
+                                cx - pinSize / 2,
+                                cy - pinSize,
+                                cx + pinSize / 2,
+                                cy
+                        ),
+                        null
+                );
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-    } catch (Exception e) {}
+    }
+
+} catch (Exception e) {
+    e.printStackTrace();
+}
 
     // === GOOGLE TEXT ===
     Paint google = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -168,15 +229,15 @@ try {
     header.setAlpha(160);
     header.setTextSize(9 * dp);
     header.setTypeface(fontRegular);
-    canvas.drawText("GPS Map Camera", textX, y, header);
+   
 
     // TITLE
     TextPaint title = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     title.setColor(Color.WHITE);
-    title.setTextSize(14 * dp);
+    title.setTextSize(12 * dp);
     title.setTypeface(fontMedium);
 
-    y += 14 * dp;
+    y += 12 * dp;
     canvas.drawText(extractMainLocation(addr) + ", Indonesia 🇮🇩", textX, y, title);
 
     // BODY
@@ -185,7 +246,7 @@ try {
     body.setTextSize(10 * dp);
     body.setTypeface(fontRegular);
 
-    y += 10 * dp;
+    y += 7 * dp;
 
     // SPLIT ADDRESS JADI 2 BARIS
     String[] parts = addr.split(",");
@@ -201,20 +262,20 @@ try {
 
     canvas.drawText(line1.trim(), textX, y, body);
 
-    y += 12 * dp;
+    y += 7 * dp;
     canvas.drawText(line2.trim(), textX, y, body);
 
-    y += 12 * dp;
+    y += 9 * dp;
 
     // PLUS CODE (sementara statis)
     canvas.drawText("3Q8V+JC8", textX, y, body);
 
-    y += 12 * dp;
+    y += 9 * dp;
 
     // LAT LONG
     canvas.drawText("Lat " + lat + " | Long " + lon, textX, y, body);
 
-    y += 12 * dp;
+    y += 9 * dp;
 
     // DATE
     canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
