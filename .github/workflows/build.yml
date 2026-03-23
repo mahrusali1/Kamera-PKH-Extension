@@ -20,19 +20,10 @@ jobs:
 
     - name: Setup Complete MIT Environment
       run: |
-        # 1. Clone template resmi ke folder terpisah agar bersih
         git clone --recurse-submodules https://github.com/mit-cml/extension-template.git build_dir
-        
-        # 2. Hapus file contoh bawaan template agar tidak bentrok
         rm -rf build_dir/src/*
-        
-        # 3. Buat struktur folder package Anda di dalam build_dir
         mkdir -p build_dir/src/com/pkh/gpscamera
-        
-        # 4. Salin file Java Anda dari repo utama ke folder kerja
         cp src/com/pkh/gpscamera/GPSExtension.java build_dir/src/com/pkh/gpscamera/
-        
-        # 5. Buat file project.properties yang benar di dalam folder kerja
         echo "main.class=com.pkh.gpscamera.GPSExtension" > build_dir/project.properties
 
     - name: Install Ant
@@ -40,18 +31,16 @@ jobs:
 
     - name: Execute Ant Build
       run: |
-        # Masuk ke folder kerja dan jalankan build
         cd build_dir
         ant extensions
-        
-        # Pastikan file benar-benar ada sebelum upload
-        echo "--- ISI FOLDER OUTPUT ---"
-        ls -R out/extensions/
+        # Cek lokasi file untuk memastikan (lagi)
+        echo "--- LOKASI FILE .AIX ---"
+        find out/ -name "*.aix"
 
     - name: Upload AIX Result
       uses: actions/upload-artifact@v4
       with:
         name: Ekstensi-Kamera-PKH
-        # Arahkan path langsung ke folder build_dir
-        path: build_dir/out/extensions/*.aix
+        # Path disesuaikan dengan hasil log 'Building zip' Anda
+        path: build_dir/out/*.aix
         if-no-files-found: error
