@@ -32,7 +32,9 @@ public class GPSExtension extends AndroidNonvisibleComponent {
                                   final String inputDateTime, final String saveLocation,
                                   final String fileName, final int templateType) {
 
-        new Thread(() -> {
+       new Thread(new Runnable() {
+    @Override
+    public void run() {
             try {
                 final String finalAddress = fetchAddress(inputLat, inputLong);
 
