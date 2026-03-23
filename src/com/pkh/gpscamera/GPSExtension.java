@@ -49,7 +49,9 @@ public class GPSExtension extends AndroidNonvisibleComponent {
 
                     Bitmap bitmapAsli = BitmapFactory.decodeFile(pathGambar);
                     Bitmap mutableBitmap = bitmapAsli.copy(Bitmap.Config.ARGB_8888, true);
-                    Canvas canvas = new Canvas(mutableBitmap);
+                    
+                    // PERBAIKAN: Menggunakan android.graphics.Canvas secara eksplisit
+                    android.graphics.Canvas canvas = new android.graphics.Canvas(mutableBitmap);
 
                     Paint pTeks = new Paint();
                     pTeks.setColor(Color.WHITE);
@@ -69,7 +71,6 @@ public class GPSExtension extends AndroidNonvisibleComponent {
                     canvas.drawText("GPS: " + finalLat + ", " + finalLon, xPos, yBase + (pTeks.getTextSize() * 1.4f), pTeks);
                     canvas.drawText("Waktu: " + waktu + " | Petugas PKH", xPos, yBase + (pTeks.getTextSize() * 2.8f), pTeks);
 
-                    // PERBAIKAN: Menggunakan java.io.File secara eksplisit
                     java.io.File direktori = new java.io.File(folderSimpan);
                     if (!direktori.exists()) direktori.mkdirs();
                     java.io.File fileHasil = new java.io.File(direktori, namaFile);
