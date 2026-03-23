@@ -155,7 +155,7 @@ try {
 } catch (Exception e) {
     e.printStackTrace();
 }
-canvas.drawText(getWilayahIndonesia(addr), textX, titleY, title);
+
             
 
             
@@ -233,9 +233,11 @@ title.setColor(Color.WHITE);
 title.setTextSize(14 * dp);
 title.setTypeface(fontMedium);
 
-// 🔥 TITLE JANGAN TERLALU TURUN
-float titleY = top + padding + (6 * dp);
-canvas.drawText(extractMainLocation(addr) + ", Indonesia 🇮🇩", textX, titleY, title);
+// 🔥 POSISI LEBIH ATAS (BIAR GA NUMPUK)
+float titleY = top + padding + (2 * dp);
+
+// 🔥 PAKAI JSON (AKURAT KECAMATAN + PROVINSI)
+canvas.drawText(getWilayahIndonesia(addr), textX, titleY, title);
 
 // === BODY ===
 TextPaint body = new TextPaint(Paint.ANTI_ALIAS_FLAG);
