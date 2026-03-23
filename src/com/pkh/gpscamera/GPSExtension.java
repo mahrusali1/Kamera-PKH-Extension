@@ -58,15 +58,15 @@ public void GenerateWatermark(final String imagePath,
                 }
 
                 Bitmap bitmap = original.copy(Bitmap.Config.ARGB_8888, true);
-                Canvas canvas = new Canvas(bitmap);
+                android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
 
                 drawByTemplate(canvas, finalAddress, inputLat, inputLong, inputDateTime,
                         bitmap.getWidth(), bitmap.getHeight());
 
-                File dir = new File(saveLocation);
+                java.io.File dir = new java.io.File(saveLocation);
                 if (!dir.exists()) dir.mkdirs();
 
-                File outFile = new File(dir, fileName);
+                java.io.File outFile = new java.io.File(dir, fileName);
                 FileOutputStream out = new FileOutputStream(outFile);
 
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out);
