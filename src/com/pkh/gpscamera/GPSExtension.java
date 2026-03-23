@@ -92,129 +92,139 @@ public class GPSExtension extends AndroidNonvisibleComponent {
         }).start();
     }
 
-    // ========================= DRAW UI =========================
     private void drawByTemplate(android.graphics.Canvas canvas, String addr, String lat, String lon,
-                                String time, int w, int h) {
+                            String time, int w, int h) {
 
-        float padding = w * 0.04f;
-        float cardWidth = w * 0.92f;
+    float padding = w * 0.04f;
+    float cardWidth = w * 0.92f;
+    float cardHeight = (h > w) ? h * 0.26f : h * 0.34f;
 
-        float cardHeight = (h > w) ? h * 0.28f : h * 0.38f;
+    float left = (w - cardWidth) / 2f;
+    float top = h - cardHeight - (h * 0.04f);
 
-        float left = (w - cardWidth) / 2f;
-        float top = h - cardHeight - (h * 0.04f);
+    // ================= BACKGROUND CARD =================
+    Paint bg = new Paint();
+    bg.setColor(Color.parseColor("#4A4A4A"));
+    bg.setAlpha(235);
+    bg.setAntiAlias(true);
 
-        // BACKGROUND
-        Paint bg = new Paint();
-        bg.setColor(Color.parseColor("#4A4A4A"));
-        bg.setAlpha(230);
-        bg.setAntiAlias(true);
+    RectF rect = new RectF(left, top, left + cardWidth, top + cardHeight);
+    canvas.drawRoundRect(rect, 35, 35, bg);
 
-        RectF rect = new RectF(left, top, left + cardWidth, top + cardHeight);
-        canvas.drawRoundRect(rect, 35, 35, bg);
+    // ================= MAP =================
+    float mapSize = cardHeight * 0.75f;
+    float mapLeft = left + padding * 0.6f;
+    float mapTop = top + (cardHeight - mapSize) / 2f;
 
-        // MAP
-        float mapSize = cardHeight * 0.7f;
-        float mapLeft = left + padding * 0.6f;
-        float mapTop = top + (cardHeight - mapSize) / 2f;
+    try {
+        String mapUrl = "https://static-maps.yandex.ru/1.x/?ll="
+                + lon + "," + lat + "&z=17&l=sat&size=300,300";
 
-        try {
-            String mapUrl = "https://static-maps.yandex.ru/1.x/?ll="
-                    + lon + "," + lat + "&z=17&l=sat&size=300,300";
+        URL url = new URL(mapUrl);
+        Bitmap map = BitmapFactory.decodeStream(url.openConnection().getInputStream());
 
-            URL url = new URL(mapUrl);
-            Bitmap map = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+        if (map != null) {
+            RectF mapRect = new RectF(mapLeft, mapTop,
+                    mapLeft + mapSize, mapTop + mapSize);
 
-            if (map != null) {
-                RectF mapRect = new RectF(mapLeft, mapTop,
-                        mapLeft + mapSize, mapTop + mapSize);
+            Path path = new Path();
+            path.addRoundRect(mapRect, 25, 25, Path.Direction.CW);
 
-                Paint mapPaint = new Paint();
-                mapPaint.setAntiAlias(true);
+            canvas.save();
+            canvas.clipPath(path);
+            canvas.drawBitmap(map, null, mapRect, null);
+            canvas.restore();
+        }
+    } catch (Exception ignored) {}
 
-                Path path = new Path();
-                path.addRoundRect(mapRect, 25, 25, Path.Direction.CW);
+    // ================= HEADER MINI (KANAN ATAS) =================
+    float headerWidth = cardWidth * 0.42f;
+    float headerHeight = cardHeight * 0.22f;
 
-                canvas.save();
-                canvas.clipPath(path);
-                canvas.drawBitmap(map, null, mapRect, mapPaint);
-                canvas.restore();
-            }
+    float headerLeft = left + cardWidth - headerWidth - padding * 0.3f;
+    float headerTop = top - headerHeight * 0.6f;
 
-        } catch (Exception ignored) {}
+    Paint headerBg = new Paint();
+    headerBg.setColor(Color.parseColor("#6A6A6A"));
+    headerBg.setAlpha(240);
+    headerBg.setAntiAlias(true);
 
-        // TEXT AREA
-        float textLeft = mapLeft + mapSize + padding;
-        float textWidth = cardWidth - mapSize - (padding * 2);
+    RectF headerRect = new RectF(headerLeft, headerTop,
+            headerLeft + headerWidth, headerTop + headerHeight);
 
-        TextPaint titlePaint = new TextPaint();
-        titlePaint.setColor(Color.WHITE);
-        titlePaint.setAntiAlias(true);
-        titlePaint.setTypeface(Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD));
-        titlePaint.setTextSize(w / 22f);
+    canvas.drawRoundRect(headerRect, 25, 25, headerBg);
 
-        TextPaint normalPaint = new TextPaint();
-        normalPaint.setColor(Color.WHITE);
-        normalPaint.setAntiAlias(true);
-        normalPaint.setTextSize(w / 32f);
+    Paint headerText = new Paint();
+    headerText.setColor(Color.WHITE);
+    headerText.setTextSize(w / 36f);
+    headerText.setAntiAlias(true);
 
-        float currentY = top + padding;
+    canvas.drawText("📷 GPS Map Camera ✏️",
+            headerLeft + padding * 0.5f,
+            headerTop + headerHeight * 0.65f,
+            headerText);
 
-        // HEADER
-        normalPaint.setTextSize(w / 36f);
-        canvas.drawText("GPS Map Camera", textLeft, currentY, normalPaint);
+    // ================= TEXT AREA =================
+    float textLeft = mapLeft + mapSize + padding;
+    float textWidth = cardWidth - mapSize - (padding * 2);
 
-        currentY += padding * 1.5f;
+    TextPaint titlePaint = new TextPaint();
+    titlePaint.setColor(Color.WHITE);
+    titlePaint.setAntiAlias(true);
+    titlePaint.setTypeface(Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD));
+    titlePaint.setTextSize(w / 20f);
 
-        // TITLE
-        String mainLoc = extractMainLocation(addr);
+    TextPaint normalPaint = new TextPaint();
+    normalPaint.setColor(Color.WHITE);
+    normalPaint.setAntiAlias(true);
+    normalPaint.setTextSize(w / 32f);
 
-        StaticLayout titleLayout = new StaticLayout(
-                mainLoc + ", Jawa Timur, Indonesia",
-                titlePaint,
-                (int) textWidth,
-                Layout.Alignment.ALIGN_NORMAL,
-                1.2f,
-                0,
-                false
-        );
+    // ================= JUDUL =================
+    String mainLoc = extractMainLocation(addr);
 
-        canvas.save();
-        canvas.translate(textLeft, currentY);
-        titleLayout.draw(canvas);
-        canvas.restore();
+    StaticLayout titleLayout = new StaticLayout(
+            mainLoc + ", Jawa Timur, Indonesia 🇮🇩",
+            titlePaint,
+            (int) textWidth,
+            Layout.Alignment.ALIGN_NORMAL,
+            1.1f,
+            0,
+            false
+    );
 
-        currentY += titleLayout.getHeight() + padding;
+    canvas.save();
+    canvas.translate(textLeft, top + cardHeight * 0.20f);
+    titleLayout.draw(canvas);
+    canvas.restore();
 
-        // ADDRESS
-        StaticLayout addrLayout = new StaticLayout(
-                addr,
-                normalPaint,
-                (int) textWidth,
-                Layout.Alignment.ALIGN_NORMAL,
-                1.2f,
-                0,
-                false
-        );
+    // ================= ALAMAT =================
+    StaticLayout addrLayout = new StaticLayout(
+            addr,
+            normalPaint,
+            (int) textWidth,
+            Layout.Alignment.ALIGN_NORMAL,
+            1.1f,
+            0,
+            false
+    );
 
-        canvas.save();
-        canvas.translate(textLeft, currentY);
-        addrLayout.draw(canvas);
-        canvas.restore();
+    canvas.save();
+    canvas.translate(textLeft, top + cardHeight * 0.45f);
+    addrLayout.draw(canvas);
+    canvas.restore();
 
-        currentY += addrLayout.getHeight() + padding;
+    // ================= KOORDINAT =================
+    float coordY = top + cardHeight * 0.78f;
+    canvas.drawText("Lat " + lat + "°  Long " + lon + "°",
+            textLeft, coordY, normalPaint);
 
-        // COORDINATE
-        normalPaint.setTextSize(w / 34f);
-        canvas.drawText("Lat " + lat + "°   Long " + lon + "°",
-                textLeft, currentY, normalPaint);
+    // ================= WAKTU =================
+    String waktuIndo = formatTanggalIndonesia(time);
 
-        currentY += padding * 1.3f;
-
-        // TIME (FORMAT INDONESIA)
-        String waktuIndo = formatTanggalIndonesia(time);
-        canvas.drawText(waktuIndo, textLeft, currentY, normalPaint);
-    }
+    canvas.drawText(waktuIndo,
+            textLeft, coordY + (cardHeight * 0.12f),
+            normalPaint);
+}
 
     // ========================= FORMAT TANGGAL =========================
     private String formatTanggalIndonesia(String input) {
