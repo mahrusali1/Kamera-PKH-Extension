@@ -1,27 +1,30 @@
 package com.pkh.gpscamera;
 
 import android.graphics.*;
-import android.graphics.BitmapFactory;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.Layout;
 import com.google.appinventor.components.annotations.*;
 import com.google.appinventor.components.runtime.*;
 import com.google.appinventor.components.common.ComponentCategory;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Scanner;
 
 @DesignerComponent(
-        version = 4,
-        description = "GPS Map Camera PKH - FINAL STABLE BUILD",
+        version = 5,
+        description = "GPS Map Camera PKH - STABLE & OPTIMIZED",
         category = ComponentCategory.EXTENSION,
         nonVisible = true,
         iconName = "images/extension.png"
 )
 @SimpleObject(external = true)
-@UsesPermissions(permissionNames = "android.permission.INTERNET, android.permission.WRITE_EXTERNAL_STORAGE")
+@UsesPermissions(permissionNames = "android.permission.INTERNET, android.permission.WRITE_EXTERNAL_STORAGE, android.permission.READ_EXTERNAL_STORAGE")
 public class GPSExtension extends AndroidNonvisibleComponent {
+
+    private Typeface fontMedium = null;
+    private Typeface fontRegular = null;
 
     public GPSExtension(ComponentContainer container) {
         super(container.$form());
@@ -31,268 +34,157 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     public void GenerateWatermark(final String imagePath, final String inputLat, final String inputLong,
                                   final String inputDateTime, final String saveLocation,
                                   final String fileName, final int templateType) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Bitmap original = null;
+                Bitmap bitmap = null;
+                try {
+                    // 1. Fetch data dari network dulu sebelum proses gambar
+                    final String finalAddress = fetchAddress(inputLat, inputLong);
+                    
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inMutable = true;
+                    original = BitmapFactory.decodeFile(imagePath, options);
+                    
+                    if (original == null) throw new Exception("File foto tidak terbaca");
 
-       new Thread(new Runnable() {
-    @Override
-    public void run() {
-            try {
-                final String finalAddress = fetchAddress(inputLat, inputLong);
+                    bitmap = original.copy(Bitmap.Config.ARGB_8888, true);
+                    // Bebaskan memory original segera
+                    original.recycle(); 
+                    original = null;
 
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inMutable = true;
+                    android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
 
-                Bitmap original = BitmapFactory.decodeFile(imagePath, options);
-                if (original == null) throw new Exception("Foto tidak ditemukan");
+                    // 2. Draw watermark
+                    drawByTemplate(canvas, finalAddress, inputLat, inputLong, inputDateTime,
+                            bitmap.getWidth(), bitmap.getHeight());
 
-                Bitmap bitmap = original.copy(Bitmap.Config.ARGB_8888, true);
-                Canvas canvas = new Canvas(bitmap);
+                    // 3. Simpan File
+                    File dir = new File(saveLocation);
+                    if (!dir.exists()) dir.mkdirs();
 
-                drawByTemplate(canvas, finalAddress, inputLat, inputLong, inputDateTime,
-                        bitmap.getWidth(), bitmap.getHeight());
+                    File outFile = new File(dir, fileName);
+                    FileOutputStream out = new FileOutputStream(outFile);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out); // 90% sudah cukup jernih
+                    out.close();
 
-                java.io.File dir = new java.io.File(saveLocation);
-                if (!dir.exists()) dir.mkdirs();
+                    final String path = outFile.getAbsolutePath();
+                    form.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() { OnAddressFound(finalAddress, path); }
+                    });
 
-                java.io.File outFile = new java.io.File(dir, fileName);
-                java.io.FileOutputStream out = new java.io.FileOutputStream(outFile);
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out);
-                out.close();
-
-                final String path = outFile.getAbsolutePath();
-
-                form.runOnUiThread(new Runnable() {
-    @Override
-    public void run() {
-        OnAddressFound(finalAddress, path);
-    }
-});
-
-            } catch (Exception e) {
-                form.runOnUiThread(new Runnable() {
-    @Override
-    public void run() {
-        OnError(e.getMessage());
-    }
-});
+                } catch (final Exception e) {
+                    if (original != null) original.recycle();
+                    if (bitmap != null) bitmap.recycle();
+                    form.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() { OnError(e.getMessage()); }
+                    });
+                }
             }
         }).start();
     }
 
-    private void drawByTemplate(Canvas canvas, String addr, String lat, String lon,
-                                String time, int w, int h) {
+    private void loadFonts() {
+        if (fontMedium != null) return; // Sudah dimuat
+        try {
+            fontMedium = Typeface.createFromAsset(form.getAssets(), "sfdisplay_medium.TTF");
+            fontRegular = Typeface.createFromAsset(form.getAssets(), "sfuitext_regular.otf");
+        } catch (Exception e) {
+            // Fallback ke default jika font aset tidak ada
+            fontMedium = Typeface.DEFAULT_BOLD;
+            fontRegular = Typeface.DEFAULT;
+        }
+    }
 
-        float dp = w / 360f;
-
+    private void drawByTemplate(android.graphics.Canvas canvas, String addr, String lat, String lon,
+                            String time, int w, int h) {
+        
+        loadFonts();
+        float dp = w / 360f; // Skala responsif berdasarkan lebar gambar
         float padding = 12 * dp;
-        float mapSize = 60 * dp;
+        float mapSize = 65 * dp;
         float spacing = 10 * dp;
 
         float cardWidth = w * 0.94f;
-        float cardHeight = mapSize + (padding * 1.3f);
-
+        float cardHeight = mapSize + (padding * 1.5f);
         float left = (w - cardWidth) / 2f;
-        float top = h - cardHeight - (20 * dp);
+        float top = h - cardHeight - (10 * dp);
 
-        Typeface fontMedium = Typeface.DEFAULT_BOLD;
-        Typeface fontRegular = Typeface.DEFAULT;
-
-        // BACKGROUND
+        // === BACKGROUND CARD ===
         Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
-        bg.setColor(Color.parseColor("#99000000"));
-        canvas.drawRoundRect(new RectF(left, top, left + cardWidth, top + cardHeight),
-                10 * dp, 10 * dp, bg);
+        bg.setColor(Color.parseColor("#AA000000")); // Sedikit lebih transparan
+        canvas.drawRoundRect(new RectF(left, top, left + cardWidth, top + cardHeight), 8 * dp, 8 * dp, bg);
 
-        // MAP
-        RectF mapRect = new RectF(
-                left + padding,
-                top + padding,
-                left + padding + mapSize,
-                top + padding + mapSize
-        );
+        // === DRAW STATIC MAP ===
+        RectF mapRect = new RectF(left + padding, top + padding, left + padding + mapSize, top + padding + mapSize);
+        drawMap(canvas, mapRect, lat, lon, dp);
 
-        try {
-            URL url = new URL("https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=17&l=sat&size=300,300");
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("User-Agent", "GPSCameraPKH");
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(5000);
-
-            Bitmap map = BitmapFactory.decodeStream(conn.getInputStream());
-            if (map != null) {
-                canvas.drawBitmap(map, null, mapRect, null);
-            }
-        } catch (Exception ignored) {}
-
+        // === TEXT LOGIC ===
         float textX = mapRect.right + spacing;
+        float maxWidth = (left + cardWidth) - textX - padding;
 
-        // ===== TITLE =====
-        TextPaint title = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        title.setColor(Color.WHITE);
-        title.setTextSize(14 * dp);
-        title.setTypeface(fontMedium);
+        // Title (Wilayah)
+        TextPaint titlePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        titlePaint.setColor(Color.WHITE);
+        titlePaint.setTextSize(13 * dp);
+        titlePaint.setTypeface(fontMedium);
 
-        float titleY = top + (4 * dp);
-
-        StaticLayout titleLayout;
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            titleLayout = StaticLayout.Builder
-                    .obtain(getWilayahIndonesia(addr), 0, getWilayahIndonesia(addr).length(),
-                            title, (int)(cardWidth - mapSize - 40 * dp))
-                    .build();
-        } else {
-            titleLayout = new StaticLayout(
-                    getWilayahIndonesia(addr),
-                    title,
-                    (int)(cardWidth - mapSize - 40 * dp),
-                    Layout.Alignment.ALIGN_NORMAL,
-                    1f, 0f, false
-            );
-        }
+        String fullWilayah = getWilayahIndonesia(addr);
+        StaticLayout titleLayout = StaticLayout.Builder.obtain(fullWilayah, 0, fullWilayah.length(), titlePaint, (int)maxWidth)
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .build();
 
         canvas.save();
-        canvas.translate(textX, titleY);
+        canvas.translate(textX, top + padding);
         titleLayout.draw(canvas);
         canvas.restore();
 
-        // ===== BODY =====
-        TextPaint body = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        body.setColor(Color.WHITE);
-        body.setTextSize(9 * dp);
-        body.setTypeface(fontRegular);
+        // Body Text
+        TextPaint bodyPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        bodyPaint.setColor(Color.WHITE);
+        bodyPaint.setTextSize(9 * dp);
+        bodyPaint.setTypeface(fontRegular);
 
-        float y = titleY + titleLayout.getHeight() + (2 * dp);
-
-        String[] parts = addr.split("\\|");
-
-        String dusun = parts.length > 1 ? parts[1].trim() : "";
-        String suburb = parts.length > 2 ? parts[2].trim() : "";
-        String kabupaten = parts.length > 3 ? parts[3].trim() : "";
-        String provinsi = parts.length > 4 ? parts[4].trim() : "";
-
-        if (provinsi.equals("")) provinsi = "Jawa Timur";
-
-        StringBuilder alamat = new StringBuilder();
-
-        if (!suburb.equals("")) alamat.append(suburb);
-        if (!dusun.equals("")) {
-            if (alamat.length() > 0) alamat.append(", ");
-            alamat.append(dusun);
-        }
-
-        if (alamat.length() > 0) alamat.append(", ");
-        alamat.append("Kab. ").append(kabupaten).append(", ").append(provinsi);
-
-        StaticLayout bodyLayout;
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            bodyLayout = StaticLayout.Builder
-                    .obtain(alamat.toString(), 0, alamat.length(), body,
-                            (int)(cardWidth - mapSize - 40 * dp))
-                    .build();
-        } else {
-            bodyLayout = new StaticLayout(
-                    alamat.toString(),
-                    body,
-                    (int)(cardWidth - mapSize - 40 * dp),
-                    Layout.Alignment.ALIGN_NORMAL,
-                    1f, 0f, false
-            );
-        }
-
-        canvas.save();
-        canvas.translate(textX, y);
-        bodyLayout.draw(canvas);
-        canvas.restore();
-
-        y += bodyLayout.getHeight() + (6 * dp);
-
-        canvas.drawText("Lat " + lat + " | Long " + lon, textX, y, body);
-
-        y += 8 * dp;
-        canvas.drawText(formatTanggalIndonesia(time), textX, y, body);
+        float currentY = top + padding + titleLayout.getHeight() + (4 * dp);
+        
+        // Alamat Detail (Baris 1 & 2)
+        String[] parts = addr.split(",");
+        String detailAddr = (parts.length > 0 ? parts[0].trim() : "");
+        canvas.drawText(detailAddr, textX, currentY, bodyPaint);
+        
+        currentY += 10 * dp;
+        canvas.drawText("Lat " + lat + " | Long " + lon, textX, currentY, bodyPaint);
+        
+        currentY += 10 * dp;
+        canvas.drawText(formatTanggalIndonesia(time) + " GMT+07:00", textX, currentY, bodyPaint);
     }
 
-    private String formatTanggalIndonesia(String input) {
+    private void drawMap(Canvas canvas, RectF rect, String lat, String lon, float dp) {
         try {
-            java.text.SimpleDateFormat inputFormat = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
-            java.util.Date date = inputFormat.parse(input);
-
-            String[] hari = {"Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"};
-            String[] bulan = {"Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"};
-
-            java.util.Calendar cal = java.util.Calendar.getInstance();
-            cal.setTime(date);
-
-            return hari[cal.get(java.util.Calendar.DAY_OF_WEEK)-1] + ", "
-                    + cal.get(java.util.Calendar.DAY_OF_MONTH) + " "
-                    + bulan[cal.get(java.util.Calendar.MONTH)] + " "
-                    + cal.get(java.util.Calendar.YEAR)
-                    + String.format(" %02d:%02d WIB",
-                    cal.get(java.util.Calendar.HOUR_OF_DAY),
-                    cal.get(java.util.Calendar.MINUTE));
-
-        } catch (Exception e) {
-            return input;
-        }
-    }
-
-    private String fetchAddress(String lat, String lon) {
-        try {
-            URL url = new URL("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon);
+            URL url = new URL("https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=16&l=sat&size=250,250");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("User-Agent", "GPSCameraPKH");
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(5000);
+            conn.setConnectTimeout(4000);
+            Bitmap mapBmp = BitmapFactory.decodeStream(conn.getInputStream());
 
-            Scanner scanner = new Scanner(conn.getInputStream()).useDelimiter("\\A");
-            String result = scanner.hasNext() ? scanner.next() : "";
-
-            org.json.JSONObject json = new org.json.JSONObject(result);
-            org.json.JSONObject address = json.getJSONObject("address");
-
-            String desa = address.optString("village", "");
-            String dusun = address.optString("hamlet", "");
-            String suburb = address.optString("suburb", "");
-
-            String kabupaten = address.optString("county",
-                    address.optString("city", ""));
-
-            String provinsi = address.optString("state", "");
-
-            if (provinsi.equals("")) provinsi = "Jawa Timur";
-
-            return desa + "|" + dusun + "|" + suburb + "|" + kabupaten + "|" + provinsi;
-
+            if (mapBmp != null) {
+                Path clipPath = new Path();
+                clipPath.addRoundRect(rect, 8 * dp, 8 * dp, Path.Direction.CW);
+                canvas.save();
+                canvas.clipPath(clipPath);
+                canvas.drawBitmap(mapBmp, null, rect, null);
+                canvas.restore();
+                mapBmp.recycle();
+            }
         } catch (Exception e) {
-            return "Lokasi tidak ditemukan";
+            // Jika gagal load map, biarkan kosong atau beri warna abu-abu
+            Paint placeholder = new Paint();
+            placeholder.setColor(Color.DKGRAY);
+            canvas.drawRoundRect(rect, 8 * dp, 8 * dp, placeholder);
         }
     }
 
     private String getWilayahIndonesia(String addr) {
-        try {
-            String[] parts = addr.split("\\|");
-
-            String desa = parts.length > 0 ? parts[0].trim() : "";
-            String kabupaten = parts.length > 3 ? parts[3].trim() : "";
-            String provinsi = parts.length > 4 ? parts[4].trim() : "";
-
-            if (provinsi.equals("")) provinsi = "Jawa Timur";
-
-            return desa + ", Kab. " + kabupaten + ", " + provinsi + ", Indonesia 🇮🇩";
-
-        } catch (Exception e) {
-            return "Indonesia 🇮🇩";
-        }
-    }
-
-    @SimpleEvent
-    public void OnAddressFound(String address, String path) {
-        EventDispatcher.dispatchEvent(this, "OnAddressFound", address, path);
-    }
-
-    @SimpleEvent
-    public void OnError(String message) {
-        EventDispatcher.dispatchEvent(this, "OnError", message);
-    }
-}
+        if (addr == null || !addr.contains(",")) return "Lokasi Indonesia 🇮🇩";
