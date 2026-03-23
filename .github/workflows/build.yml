@@ -21,12 +21,16 @@ jobs:
     - name: Clone MIT Extension Template
       run: |
         git clone --recurse-submodules https://github.com/mit-cml/extension-template.git template
-        # 1. Bersihkan folder contoh dari template agar tidak bentrok
+        # 1. Bersihkan folder src dan sikat semua contoh bawaan
         rm -rf template/src/*
-        # 2. Buat folder sesuai nama package: com.pkh.gpscamera
+        # 2. Buat folder package yang benar
         mkdir -p template/src/com/pkh/gpscamera
-        # 3. Copy file Java Anda ke sana
+        # 3. Copy file Java Anda ke folder template
         cp src/com/pkh/gpscamera/GPSExtension.java template/src/com/pkh/gpscamera/
+        
+        # 4. PAKSA file project.properties agar mengarah ke Class kita
+        echo "main.class=com.pkh.gpscamera.GPSExtension" > template/project.properties
+        echo "extension.main.class=com.pkh.gpscamera.GPSExtension" >> template/project.properties
 
     - name: Install Ant
       run: sudo apt-get install ant -y
@@ -34,16 +38,15 @@ jobs:
     - name: Build with Ant
       run: |
         cd template
-        # Jalankan kompilasi
+        # Jalankan build resmi MIT
         ant extensions
-        # Intip folder output untuk memastikan file tercipta
-        echo "Daftar file di folder output:"
-        ls -R out/extensions/ || echo "Folder out/extensions masih kosong!"
+        # Cek isi folder out secara mendalam
+        echo "--- CEK FOLDER OUTPUT ---"
+        find out -name "*.aix" || echo "File AIX tidak ditemukan!"
 
     - name: Upload AIX Result
       uses: actions/upload-artifact@v4
       with:
         name: Ekstensi-Kamera-PKH
-        # Gunakan path yang lebih fleksibel agar terbaca
         path: template/out/extensions/*.aix
         if-no-files-found: error
