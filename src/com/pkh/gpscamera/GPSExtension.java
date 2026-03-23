@@ -33,15 +33,17 @@ public class GPSExtension extends AndroidNonvisibleComponent {
 
     // ========================= MAIN FUNCTION =========================
     @SimpleFunction(description = "Generate Watermark GPS Camera")
-    public void GenerateWatermark(final String imagePath,
-                                  final String inputLat,
-                                  final String inputLong,
-                                  final String inputDateTime,
-                                  final String saveLocation,
-                                  final String fileName,
-                                  final int templateType) {
+public void GenerateWatermark(final String imagePath,
+                              final String inputLat,
+                              final String inputLong,
+                              final String inputDateTime,
+                              final String saveLocation,
+                              final String fileName,
+                              final int templateType) {
 
-        new Thread(() -> {
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
             try {
 
                 final String finalAddress = fetchAddress(inputLat, inputLong);
@@ -72,18 +74,25 @@ public class GPSExtension extends AndroidNonvisibleComponent {
 
                 final String path = outFile.getAbsolutePath();
 
-                form.runOnUiThread(() ->
-                        OnAddressFound(finalAddress, path)
-                );
+                form.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        OnAddressFound(finalAddress, path);
+                    }
+                });
 
-            } catch (Exception e) {
-                String err = e.getMessage();
-                form.runOnUiThread(() ->
-                        OnError(err)
-                );
+            } catch (final Exception e) {
+                final String err = e.getMessage();
+                form.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        OnError(err);
+                    }
+                });
             }
-        }).start();
-    }
+        }
+    }).start();
+}
 
     // ========================= DRAW UI =========================
     private void drawByTemplate(Canvas canvas, String addr, String lat, String lon,
