@@ -155,7 +155,7 @@ try {
 } catch (Exception e) {
     e.printStackTrace();
 }
-canvas.drawText("GPS Map Camera", xText, yText, topText);
+canvas.drawText(getWilayahIndonesia(addr), textX, titleY, title);
             
 
             
@@ -244,7 +244,7 @@ body.setTextSize(9 * dp);
 body.setTypeface(fontRegular);
 
 // 🔥 ADDRESS MULAI SETELAH TITLE (INI KUNCI)
-y = titleY + (9 * dp);
+y = titleY + (12 * dp);
 
 // SPLIT ADDRESS
 String[] parts = addr.split(",");
@@ -310,20 +310,75 @@ canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
         return parts.length > 0 ? parts[0] : "Lokasi";
     }
 
-    private String fetchAddress(String lat, String lon) {
-        try {
-            URL url = new URL("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("User-Agent", "GPSCameraPKH");
-            Scanner scanner = new Scanner(conn.getInputStream()).useDelimiter("\\A");
-            String result = scanner.hasNext() ? scanner.next() : "";
-            if (result.contains("display_name")) {
-                int start = result.indexOf("display_name") + 15;
-                return result.substring(start, result.indexOf("\"", start)).replace("\\\"", "");
-            }
-        } catch (Exception ignored) {}
-        return "Alamat tidak ditemukan";
+// 🔥 TARUH DI SINI
+private String getKecamatanProvinsi(String addr) {
+    String kecamatan = "";
+    String provinsi = "";
+
+    String[] parts = addr.split(",");
+
+    for (String p : parts) {
+        String lower = p.toLowerCase();
+
+        if (lower.contains("kecamatan") || lower.contains("kec")) {
+            kecamatan = p.replace("Kecamatan", "").replace("Kec.", "").trim();
+        }
+
+        if (lower.contains("provinsi")) {
+            provinsi = p.replace("Provinsi", "").trim();
+        }
     }
+
+    if (kecamatan.equals("") && parts.length > 2) {
+        kecamatan = parts[2].trim();
+    }
+
+    if (provinsi.equals("") && parts.length > 0) {
+        provinsi = parts[parts.length - 2].trim();
+    }
+
+    return "Kecamatan " + kecamatan + ", " + provinsi + ", Indonesia 🇮🇩";
+}
+
+    private String fetchAddress(String lat, String lon) {
+    try {
+        URL url = new URL("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestProperty("User-Agent", "GPSCameraPKH");
+
+        Scanner scanner = new Scanner(conn.getInputStream()).useDelimiter("\\A");
+        String result = scanner.hasNext() ? scanner.next() : "";
+
+        return result; // 🔥 KIRIM JSON UTUH
+
+    } catch (Exception e) {
+        return "";
+    }
+} 
+
+        // 🔥 TARUH DI SINI (SETELAH fetchAddress)
+private String getWilayahIndonesia(String json) {
+    try {
+        org.json.JSONObject obj = new org.json.JSONObject(json);
+        org.json.JSONObject addr = obj.getJSONObject("address");
+
+        String kecamatan = "";
+        String provinsi = "";
+
+        if (addr.has("subdistrict")) {
+            kecamatan = addr.getString("subdistrict");
+        }
+
+        if (addr.has("state")) {
+            provinsi = addr.getString("state");
+        }
+
+        return "Kecamatan " + kecamatan + ", " + provinsi + ", Indonesia 🇮🇩";
+
+    } catch (Exception e) {
+        return "Indonesia 🇮🇩";
+    }
+}
 
     @SimpleEvent(description = "Berhasil")
     public void OnAddressFound(String address, String path) {
