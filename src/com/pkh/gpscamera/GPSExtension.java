@@ -1,12 +1,10 @@
 package com.pkh.gpscamera;
 
 import android.graphics.*;
-import android.content.Context;
 import com.google.appinventor.components.annotations.*;
 import com.google.appinventor.components.runtime.*;
 import com.google.appinventor.components.common.ComponentCategory;
 
-import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Scanner;
@@ -16,8 +14,8 @@ import android.text.TextPaint;
 import android.text.Layout;
 
 @DesignerComponent(
-        version = 2,
-        description = "GPS Map Camera PKH - Final UI Mirip Asli (Auto Wrap + Responsive)",
+        version = 4,
+        description = "GPS Map Camera PKH - FINAL STABLE + FORMAT INDONESIA",
         category = ComponentCategory.EXTENSION,
         nonVisible = true,
         iconName = "images/extension.png"
@@ -33,66 +31,66 @@ public class GPSExtension extends AndroidNonvisibleComponent {
 
     // ========================= MAIN FUNCTION =========================
     @SimpleFunction(description = "Generate Watermark GPS Camera")
-public void GenerateWatermark(final String imagePath,
-                              final String inputLat,
-                              final String inputLong,
-                              final String inputDateTime,
-                              final String saveLocation,
-                              final String fileName,
-                              final int templateType) {
+    public void GenerateWatermark(final String imagePath,
+                                  final String inputLat,
+                                  final String inputLong,
+                                  final String inputDateTime,
+                                  final String saveLocation,
+                                  final String fileName,
+                                  final int templateType) {
 
-    new Thread(new Runnable() {
-        @Override
-        public void run() {
-            try {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
 
-                final String finalAddress = fetchAddress(inputLat, inputLong);
+                    final String finalAddress = fetchAddress(inputLat, inputLong);
 
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inMutable = true;
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inMutable = true;
 
-                Bitmap original = BitmapFactory.decodeFile(imagePath, options);
+                    Bitmap original = BitmapFactory.decodeFile(imagePath, options);
 
-                if (original == null) {
-                    throw new Exception("Foto tidak ditemukan");
+                    if (original == null) {
+                        throw new Exception("Foto tidak ditemukan");
+                    }
+
+                    Bitmap bitmap = original.copy(Bitmap.Config.ARGB_8888, true);
+                    android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
+
+                    drawByTemplate(canvas, finalAddress, inputLat, inputLong, inputDateTime,
+                            bitmap.getWidth(), bitmap.getHeight());
+
+                    java.io.File dir = new java.io.File(saveLocation);
+                    if (!dir.exists()) dir.mkdirs();
+
+                    java.io.File outFile = new java.io.File(dir, fileName);
+                    java.io.FileOutputStream out = new java.io.FileOutputStream(outFile);
+
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out);
+                    out.close();
+
+                    final String path = outFile.getAbsolutePath();
+
+                    form.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            OnAddressFound(finalAddress, path);
+                        }
+                    });
+
+                } catch (final Exception e) {
+                    final String err = e.getMessage();
+                    form.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            OnError(err);
+                        }
+                    });
                 }
-
-                Bitmap bitmap = original.copy(Bitmap.Config.ARGB_8888, true);
-                android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
-
-                drawByTemplate(canvas, finalAddress, inputLat, inputLong, inputDateTime,
-                        bitmap.getWidth(), bitmap.getHeight());
-
-                java.io.File dir = new java.io.File(saveLocation);
-                if (!dir.exists()) dir.mkdirs();
-
-                java.io.File outFile = new java.io.File(dir, fileName);
-                FileOutputStream out = new FileOutputStream(outFile);
-
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out);
-                out.close();
-
-                final String path = outFile.getAbsolutePath();
-
-                form.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        OnAddressFound(finalAddress, path);
-                    }
-                });
-
-            } catch (final Exception e) {
-                final String err = e.getMessage();
-                form.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        OnError(err);
-                    }
-                });
             }
-        }
-    }).start();
-}
+        }).start();
+    }
 
     // ========================= DRAW UI =========================
     private void drawByTemplate(android.graphics.Canvas canvas, String addr, String lat, String lon,
@@ -101,12 +99,12 @@ public void GenerateWatermark(final String imagePath,
         float padding = w * 0.04f;
         float cardWidth = w * 0.92f;
 
-        float cardHeight = (h > w) ? h * 0.22f : h * 0.32f;
+        float cardHeight = (h > w) ? h * 0.28f : h * 0.38f;
 
         float left = (w - cardWidth) / 2f;
         float top = h - cardHeight - (h * 0.04f);
 
-        // === BACKGROUND ===
+        // BACKGROUND
         Paint bg = new Paint();
         bg.setColor(Color.parseColor("#4A4A4A"));
         bg.setAlpha(230);
@@ -115,8 +113,8 @@ public void GenerateWatermark(final String imagePath,
         RectF rect = new RectF(left, top, left + cardWidth, top + cardHeight);
         canvas.drawRoundRect(rect, 35, 35, bg);
 
-        // === MAP ===
-        float mapSize = cardHeight * 0.78f;
+        // MAP
+        float mapSize = cardHeight * 0.7f;
         float mapLeft = left + padding * 0.6f;
         float mapTop = top + (cardHeight - mapSize) / 2f;
 
@@ -145,7 +143,7 @@ public void GenerateWatermark(final String imagePath,
 
         } catch (Exception ignored) {}
 
-        // === TEXT AREA ===
+        // TEXT AREA
         float textLeft = mapLeft + mapSize + padding;
         float textWidth = cardWidth - mapSize - (padding * 2);
 
@@ -160,55 +158,95 @@ public void GenerateWatermark(final String imagePath,
         normalPaint.setAntiAlias(true);
         normalPaint.setTextSize(w / 32f);
 
-        // === HEADER ===
-        normalPaint.setTextSize(w / 36f);
-        canvas.drawText("GPS Map Camera", textLeft,
-                top + (cardHeight * 0.18f), normalPaint);
+        float currentY = top + padding;
 
-        // === TITLE ===
+        // HEADER
+        normalPaint.setTextSize(w / 36f);
+        canvas.drawText("GPS Map Camera", textLeft, currentY, normalPaint);
+
+        currentY += padding * 1.5f;
+
+        // TITLE
         String mainLoc = extractMainLocation(addr);
 
         StaticLayout titleLayout = new StaticLayout(
-                mainLoc + ", Jawa Timur, Indonesia 🇮🇩",
+                mainLoc + ", Jawa Timur, Indonesia",
                 titlePaint,
                 (int) textWidth,
                 Layout.Alignment.ALIGN_NORMAL,
-                1.1f,
+                1.2f,
                 0,
                 false
         );
 
         canvas.save();
-        canvas.translate(textLeft, top + (cardHeight * 0.28f));
+        canvas.translate(textLeft, currentY);
         titleLayout.draw(canvas);
         canvas.restore();
 
-        // === ADDRESS ===
+        currentY += titleLayout.getHeight() + padding;
+
+        // ADDRESS
         StaticLayout addrLayout = new StaticLayout(
                 addr,
                 normalPaint,
                 (int) textWidth,
                 Layout.Alignment.ALIGN_NORMAL,
-                1.1f,
+                1.2f,
                 0,
                 false
         );
 
         canvas.save();
-        canvas.translate(textLeft, top + (cardHeight * 0.50f));
+        canvas.translate(textLeft, currentY);
         addrLayout.draw(canvas);
         canvas.restore();
 
-        // === COORDINATE ===
-        float infoY = top + (cardHeight * 0.80f);
+        currentY += addrLayout.getHeight() + padding;
+
+        // COORDINATE
         normalPaint.setTextSize(w / 34f);
-
         canvas.drawText("Lat " + lat + "°   Long " + lon + "°",
-                textLeft, infoY, normalPaint);
+                textLeft, currentY, normalPaint);
 
-        // === TIME ===
-        canvas.drawText(time + " GMT +07:00",
-                textLeft, infoY + (cardHeight * 0.12f), normalPaint);
+        currentY += padding * 1.3f;
+
+        // TIME (FORMAT INDONESIA)
+        String waktuIndo = formatTanggalIndonesia(time);
+        canvas.drawText(waktuIndo, textLeft, currentY, normalPaint);
+    }
+
+    // ========================= FORMAT TANGGAL =========================
+    private String formatTanggalIndonesia(String input) {
+        try {
+            java.text.SimpleDateFormat inputFormat =
+                    new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
+
+            inputFormat.setLenient(true); // biar fleksibel
+
+            java.util.Date date = inputFormat.parse(input);
+
+            String[] hari = {"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"};
+            String[] bulan = {"Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                    "Juli", "Agustus", "September", "Oktober", "November", "Desember"};
+
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTime(date);
+
+            String namaHari = hari[cal.get(java.util.Calendar.DAY_OF_WEEK) - 1];
+            int tgl = cal.get(java.util.Calendar.DAY_OF_MONTH);
+            String namaBulan = bulan[cal.get(java.util.Calendar.MONTH)];
+            int tahun = cal.get(java.util.Calendar.YEAR);
+
+            int jam = cal.get(java.util.Calendar.HOUR_OF_DAY);
+            int menit = cal.get(java.util.Calendar.MINUTE);
+
+            return namaHari + ", " + tgl + " " + namaBulan + " " + tahun +
+                    String.format(" %02d:%02d WIB", jam, menit);
+
+        } catch (Exception e) {
+            return input;
+        }
     }
 
     // ========================= EXTRACT LOCATION =========================
