@@ -170,7 +170,12 @@ RectF mapRect = new RectF(
 
 try {
     URL url = new URL("https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=17&l=sat&size=300,300");
-    Bitmap map = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestProperty("User-Agent", "GPSCameraPKH");
+conn.setConnectTimeout(5000);
+conn.setReadTimeout(5000);
+
+Bitmap map = BitmapFactory.decodeStream(conn.getInputStream());
 
     if (map != null) {
         // === DRAW MAP ROUNDED ===
@@ -237,7 +242,30 @@ title.setTypeface(fontMedium);
 float titleY = top + padding + (2 * dp);
 
 // 🔥 PAKAI JSON (AKURAT KECAMATAN + PROVINSI)
-canvas.drawText(getWilayahIndonesia(addr), textX, titleY, title);
+StaticLayout layout;
+
+if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+    layout = StaticLayout.Builder
+            .obtain(getWilayahIndonesia(addr), 0, getWilayahIndonesia(addr).length(), title, (int)(cardWidth - mapSize - 40*dp))
+            .build();
+} else {
+    layout = new StaticLayout(
+            getWilayahIndonesia(addr),
+            title,
+            (int)(cardWidth - mapSize - 40*dp),
+            Layout.Alignment.ALIGN_NORMAL,
+            1.0f,
+            0.0f,
+            false
+    );
+}
+        .obtain(getWilayahIndonesia(addr), 0, getWilayahIndonesia(addr).length(), title, (int)(cardWidth - mapSize - 40*dp))
+        .build();
+
+canvas.save();
+canvas.translate(textX, titleY);
+layout.draw(canvas);
+canvas.restore();
 
 // === BODY ===
 TextPaint body = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -246,19 +274,14 @@ body.setTextSize(9 * dp);
 body.setTypeface(fontRegular);
 
 // 🔥 ADDRESS MULAI SETELAH TITLE (INI KUNCI)
-y = titleY + (12 * dp);
+y = titleY + layout.getHeight() + (6 * dp);
 
 // SPLIT ADDRESS
 String[] parts = addr.split(",");
-String line1 = "";
-String line2 = "";
 
-if (parts.length >= 4) {
-    line1 = parts[0] + "," + parts[1] + "," + parts[2];
-    line2 = addr.replace(line1 + ",", "");
-} else {
-    line1 = addr;
-}
+String line1 = parts.length > 0 ? parts[0] : "";
+String line2 = parts.length > 1 ? parts[1] + ", " +
+               (parts.length > 2 ? parts[2] : "") : "";
 
 // BARIS 1
 canvas.drawText(line1.trim(), textX, y, body);
@@ -267,9 +290,7 @@ canvas.drawText(line1.trim(), textX, y, body);
 y += 9 * dp;
 canvas.drawText(line2.trim(), textX, y, body);
 
-// PLUS CODE
-y += 10 * dp;
-canvas.drawText("3Q8V+JC8", textX, y, body);
+
 
 // LAT LONG
 y += 10 * dp;
@@ -304,78 +325,70 @@ canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
     }
 }
 
-    private String extractMainLocation(String addr) {
-        String[] parts = addr.split(",");
-        for (String p : parts) {
-            if (p.toLowerCase().contains("kecamatan") || p.toLowerCase().contains("kec")) return p.trim();
-        }
-        return parts.length > 0 ? parts[0] : "Lokasi";
-    }
-
-// 🔥 TARUH DI SINI
-private String getKecamatanProvinsi(String addr) {
-    String kecamatan = "";
-    String provinsi = "";
-
-    String[] parts = addr.split(",");
-
-    for (String p : parts) {
-        String lower = p.toLowerCase();
-
-        if (lower.contains("kecamatan") || lower.contains("kec")) {
-            kecamatan = p.replace("Kecamatan", "").replace("Kec.", "").trim();
-        }
-
-        if (lower.contains("provinsi")) {
-            provinsi = p.replace("Provinsi", "").trim();
-        }
-    }
-
-    if (kecamatan.equals("") && parts.length > 2) {
-        kecamatan = parts[2].trim();
-    }
-
-    if (provinsi.equals("") && parts.length > 0) {
-        provinsi = parts[parts.length - 2].trim();
-    }
-
-    return "Kecamatan " + kecamatan + ", " + provinsi + ", Indonesia 🇮🇩";
-}
+   
 
     private String fetchAddress(String lat, String lon) {
     try {
         URL url = new URL("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestProperty("User-Agent", "GPSCameraPKH");
-
+        conn.setConnectTimeout(5000);
+        conn.setReadTimeout(5000);
+            
         Scanner scanner = new Scanner(conn.getInputStream()).useDelimiter("\\A");
         String result = scanner.hasNext() ? scanner.next() : "";
 
-        return result; // 🔥 KIRIM JSON UTUH
+        // 🔥 PARSE JSON
+        org.json.JSONObject json = new org.json.JSONObject(result);
+        org.json.JSONObject address = json.getJSONObject("address");
+
+       String desa = address.optString("village",
+             address.optString("hamlet",
+             address.optString("suburb", "")));
+
+String kecamatan = address.optString("subdistrict",
+                   address.optString("town", ""));
+
+String kabupaten = address.optString("county",
+                  address.optString("city", ""));
+
+String provinsi = address.optString("state", "");
+
+// 🔥 TARUH DI SINI (SEBELUM RETURN)
+if (kecamatan.equals("") || kecamatan.equals(kabupaten)) {
+    kecamatan = kabupaten;
+}
+
+return desa + "," + kecamatan + "," + kabupaten + "," + provinsi;
 
     } catch (Exception e) {
-        return "";
+        return "Lokasi tidak ditemukan";
     }
-} 
+}
 
         // 🔥 TARUH DI SINI (SETELAH fetchAddress)
-private String getWilayahIndonesia(String json) {
+private String getWilayahIndonesia(String addr) {
     try {
-        org.json.JSONObject obj = new org.json.JSONObject(json);
-        org.json.JSONObject addr = obj.getJSONObject("address");
 
-        String kecamatan = "";
-        String provinsi = "";
+            // 🔥 TARUH DI SINI (PALING ATAS)
+        if (!addr.contains(",")) {
+            return addr;
+        }
+        String[] parts = addr.split(",");
 
-        if (addr.has("subdistrict")) {
-            kecamatan = addr.getString("subdistrict");
+        String desa = parts.length > 0 ? parts[0].trim() : "";
+        String kecamatan = parts.length > 1 ? parts[1].trim() : "";
+        String kabupaten = parts.length > 2 ? parts[2].trim() : "";
+        String provinsi = parts.length > 3 ? parts[3].trim() : "";
+
+        // 🔥 TARUH DI SINI
+        if (kabupaten.equals("")) {
+            kabupaten = kecamatan;
         }
 
-        if (addr.has("state")) {
-            provinsi = addr.getString("state");
-        }
-
-        return "Kecamatan " + kecamatan + ", " + provinsi + ", Indonesia 🇮🇩";
+        return desa + ", Kecamatan " + kecamatan +
+               ", Kabupaten " + kabupaten +
+               ", " + provinsi + ", Indonesia 🇮🇩";
 
     } catch (Exception e) {
         return "Indonesia 🇮🇩";
