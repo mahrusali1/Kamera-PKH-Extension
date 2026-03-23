@@ -200,10 +200,10 @@ Bitmap map = BitmapFactory.decodeStream(conn.getInputStream());
                         pin,
                         null,
                         new RectF(
-                                cx - pinSize / 2,
-                                cy - pinSize,
-                                cx + pinSize / 2,
-                                cy
+                                cx - pinSize / 2,          // Kiri (Tetap)
+        cy - pinSize - (10 * dp),  // ATAS (Dikurangi agar naik)
+        cx + pinSize / 2,          // Kanan (Tetap)
+        cy - (10 * dp)             // BAWAH (Dikurangi agar naik)
                         ),
                         null
                 );
@@ -239,7 +239,7 @@ title.setTextSize(14 * dp);
 title.setTypeface(fontMedium);
 
 // 🔥 POSISI LEBIH ATAS (BIAR GA NUMPUK)
-float titleY = top + padding - (15 * dp);
+float titleY = top + padding - (13 * dp);
 
 StaticLayout layout;
 
