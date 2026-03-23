@@ -23,6 +23,15 @@ jobs:
     - name: Install Ant
       run: sudo apt-get install ant -y
 
+    - name: Download MIT Libraries
+      run: |
+        mkdir -p lib
+        wget -P lib https://raw.githubusercontent.com/mit-cml/extension-template/master/lib/AndroidRuntime.jar
+        wget -P lib https://raw.githubusercontent.com/mit-cml/extension-template/master/lib/components.jar
+        wget -P lib https://raw.githubusercontent.com/mit-cml/extension-template/master/lib/common.jar
+        # Tambahan jika diperlukan oleh template
+        wget -P lib https://raw.githubusercontent.com/mit-cml/extension-template/master/lib/annotation.jar || echo "Optional"
+
     - name: Build with Ant
       run: ant extensions
 
