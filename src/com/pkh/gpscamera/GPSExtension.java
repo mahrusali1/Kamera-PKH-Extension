@@ -87,8 +87,37 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     float top = h - cardHeight - (20 * dp);
 
     // === LOAD FONT (HANYA SEKALI) ===
-    Typeface fontMedium = Typeface.createFromAsset(form.getAssets(), "sfdisplay_medium.TTF");
-    Typeface fontRegular = Typeface.createFromAsset(form.getAssets(), "sfuitext_regular.otf");
+    // === LOAD FONT AMAN (ANTI ERROR APP INVENTOR) ===
+Typeface fontMedium = Typeface.DEFAULT_BOLD;
+Typeface fontRegular = Typeface.DEFAULT;
+
+try {
+    java.io.InputStream is1 = form.openAsset("sfdisplay_medium.TTF");
+    java.io.InputStream is2 = form.openAsset("sfuitext_regular.otf");
+
+    java.io.File file1 = java.io.File.createTempFile("font1", ".ttf");
+    java.io.File file2 = java.io.File.createTempFile("font2", ".otf");
+
+    java.io.FileOutputStream os1 = new java.io.FileOutputStream(file1);
+    java.io.FileOutputStream os2 = new java.io.FileOutputStream(file2);
+
+    byte[] buffer = new byte[1024];
+    int len;
+
+    while ((len = is1.read(buffer)) > 0) os1.write(buffer, 0, len);
+    while ((len = is2.read(buffer)) > 0) os2.write(buffer, 0, len);
+
+    os1.close();
+    os2.close();
+    is1.close();
+    is2.close();
+
+    fontMedium = Typeface.createFromFile(file1);
+    fontRegular = Typeface.createFromFile(file2);
+
+} catch (Exception e) {
+    e.printStackTrace();
+}
 
     // === BACKGROUND ===
     Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
