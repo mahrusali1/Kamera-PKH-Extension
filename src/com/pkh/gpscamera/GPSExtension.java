@@ -95,7 +95,7 @@ public void GenerateWatermark(final String imagePath,
 }
 
     // ========================= DRAW UI =========================
-    private void drawByTemplate(Canvas canvas, String addr, String lat, String lon,
+    private void drawByTemplate(android.graphics.Canvas canvas, String addr, String lat, String lon,
                                 String time, int w, int h) {
 
         float padding = w * 0.04f;
