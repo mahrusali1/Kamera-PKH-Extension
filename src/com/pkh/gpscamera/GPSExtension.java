@@ -14,7 +14,7 @@ import java.util.Scanner;
 
 @DesignerComponent(
         version = 4,
-        description = "GPS Map Camera PKH - FIXED BUILD",
+        description = "GPS Map Camera PKH - FINAL BUILD SUCCESS",
         category = ComponentCategory.EXTENSION,
         nonVisible = true,
         iconName = "images/extension.png"
@@ -61,9 +61,10 @@ public class GPSExtension extends AndroidNonvisibleComponent {
                         public void run() { OnAddressFound(finalAddress, path); }
                     });
                 } catch (final Exception e) {
+                    final String err = e.getMessage();
                     form.runOnUiThread(new Runnable() {
                         @Override
-                        public void run() { OnError(e.getMessage()); }
+                        public void run() { OnError(err); }
                     });
                 }
             }
@@ -73,4 +74,99 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     private void drawByTemplate(android.graphics.Canvas canvas, String addr, String lat, String lon,
                                 String time, int w, int h) {
         String logoName = "logo_pkh.png"; 
-        String pinName = "map_pin.png
+        String pinName = "map_pin.png";   
+
+        float padding = w * 0.035f;
+        float cardWidth = w * 0.94f;
+        float cardHeight = (h > w) ? h * 0.24f : h * 0.34f;
+        float left = (w - cardWidth) / 2f;
+        float top = h - cardHeight - (h * 0.03f);
+
+        Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bg.setColor(Color.BLACK);
+        bg.setAlpha(190); 
+        canvas.drawRoundRect(new RectF(left, top, left + cardWidth, top + cardHeight), 25, 25, bg);
+
+        float mapSize = cardHeight - (padding * 2);
+        try {
+            URL url = new URL("https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=17&l=sat&size=300,300");
+            Bitmap map = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+            if (map != null) {
+                RectF mapRect = new RectF(left + padding, top + padding, left + padding + mapSize, top + padding + mapSize);
+                Path path = new Path();
+                path.addRoundRect(mapRect, 15, 15, Path.Direction.CW);
+                canvas.save();
+                canvas.clipPath(path);
+                canvas.drawBitmap(map, null, mapRect, new Paint(Paint.ANTI_ALIAS_FLAG));
+                canvas.restore();
+            }
+        } catch (Exception ignored) {}
+
+        float textLeft = left + mapSize + (padding * 1.8f);
+        float textWidth = cardWidth - mapSize - (padding * 3f);
+        
+        TextPaint tp = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        tp.setColor(Color.WHITE);
+        tp.setTextSize(w / 42f);
+        tp.setAlpha(160);
+        canvas.drawText("GPS Map Camera", textLeft, top + padding * 1.5f, tp);
+
+        tp.setAlpha(255);
+        tp.setTypeface(Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD));
+        tp.setTextSize(w / 24f);
+        canvas.drawText(extractMainLocation(addr), textLeft, top + padding * 3.0f, tp);
+
+        tp.setTypeface(Typeface.DEFAULT);
+        tp.setTextSize(w / 38f);
+        StaticLayout sl = new StaticLayout(addr, tp, (int) textWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+        canvas.save();
+        canvas.translate(textLeft, top + padding * 3.8f);
+        sl.draw(canvas);
+        canvas.restore();
+
+        float coordY = top + padding * 4.5f + sl.getHeight();
+        tp.setColor(Color.parseColor("#009688"));
+        tp.setTextSize(w / 36f);
+        canvas.drawText("Lat " + lat + " | Long " + lon, textLeft, coordY, tp);
+        
+        tp.setColor(Color.WHITE);
+        canvas.drawText(formatTanggalIndonesia(time), textLeft, coordY + padding * 1.2f, tp);
+    }
+
+    private String formatTanggalIndonesia(String input) {
+        try {
+            java.text.SimpleDateFormat inputFormat = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
+            java.util.Date date = inputFormat.parse(input);
+            String[] hari = {"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"};
+            String[] bulan = {"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"};
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTime(date);
+            return hari[cal.get(java.util.Calendar.DAY_OF_WEEK) - 1] + ", " + cal.get(java.util.Calendar.DAY_OF_MONTH) + " " + bulan[cal.get(java.util.Calendar.MONTH)] + " " + cal.get(java.util.Calendar.YEAR) + String.format(" %02d:%02d WIB", cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE));
+        } catch (Exception e) { return input; }
+    }
+
+    private String extractMainLocation(String addr) {
+        String[] parts = addr.split(",");
+        for (String p : parts) {
+            if (p.toLowerCase().contains("kecamatan") || p.toLowerCase().contains("kec")) return p.trim();
+        }
+        return parts.length > 0 ? parts[0] : "Lokasi";
+    }
+
+    private String fetchAddress(String lat, String lon) {
+        try {
+            URL url = new URL("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestProperty("User-Agent", "GPSCameraPKH");
+            Scanner scanner = new Scanner(conn.getInputStream()).useDelimiter("\\A");
+            String result = scanner.hasNext() ? scanner.next() : "";
+            if (result.contains("display_name")) {
+                int start = result.indexOf("display_name") + 15;
+                return result.substring(start, result.indexOf("\"", start)).replace("\\\"", "");
+            }
+        } catch (Exception ignored) {}
+        return "Alamat tidak ditemukan";
+    }
+
+    @SimpleEvent(description = "Berhasil")
+    public void On
