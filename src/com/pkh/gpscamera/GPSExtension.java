@@ -84,7 +84,7 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     float cardHeight = mapSize + (padding * 1.3f);
 
     float left = (w - cardWidth) / 2f;
-    float top = h - cardHeight - (15 * dp);
+    float top = h - cardHeight - (25 * dp);
 
     // === LOAD FONT (HANYA SEKALI) ===
     // === LOAD FONT AMAN (ANTI ERROR APP INVENTOR) ===
@@ -271,7 +271,7 @@ body.setTextSize(9 * dp);
 body.setTypeface(fontRegular);
 
 // 🔥 ADDRESS MULAI SETELAH TITLE (INI KUNCI)
-y = titleY + layout.getHeight() + (2 * dp);
+y = titleY + layout.getHeight() + (6 * dp);
 
 // SPLIT ADDRESS
 String[] parts = addr.split(",");
