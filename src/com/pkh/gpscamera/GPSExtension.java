@@ -71,78 +71,75 @@ public class GPSExtension extends AndroidNonvisibleComponent {
         }).start();
     }
 
-    private void drawByTemplate(android.graphics.Canvas canvas, String addr, String lat, String lon,
-                                String time, int w, int h) {
-        String logoName = "logo_pkh.png"; 
-        String pinName = "map_pin.png";   
+    private void drawByTemplate(Canvas canvas, String addr, String lat, String lon,
+                            String time, int w, int h) {
 
-        float padding = w * 0.035f;
-        float cardWidth = w * 0.94f;
-        float cardHeight = (h > w) ? h * 0.24f : h * 0.34f;
-        float left = (w - cardWidth) / 2f;
-        float top = h - cardHeight - (h * 0.03f);
+    float dp = w / 360f;
 
-        Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
-        bg.setColor(Color.BLACK);
-        bg.setAlpha(190); 
-        canvas.drawRoundRect(new RectF(left, top, left + cardWidth, top + cardHeight), 25, 25, bg);
+    float cardPadding = 12 * dp;
+    float mapSize = 100 * dp;
+    float spacing = 8 * dp;
 
-        float mapSize = cardHeight - (padding * 2);
-        try {
-            URL url = new URL("https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=17&l=sat&size=300,300");
-            Bitmap map = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-            if (map != null) {
-                RectF mapRect = new RectF(left + padding, top + padding, left + padding + mapSize, top + padding + mapSize);
-                Path path = new Path();
-                path.addRoundRect(mapRect, 15, 15, Path.Direction.CW);
-                canvas.save();
-                canvas.clipPath(path);
-                canvas.drawBitmap(map, null, mapRect, new Paint(Paint.ANTI_ALIAS_FLAG));
-                canvas.restore();
-            }
-        } catch (Exception ignored) {}
+    float cardWidth = w * 0.92f;
+    float cardHeight = mapSize + (cardPadding * 2);
 
-        float textLeft = left + mapSize + (padding * 1.8f);
-        float textWidth = cardWidth - mapSize - (padding * 3f);
-        
-        TextPaint tp = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        tp.setColor(Color.WHITE);
-        tp.setTextSize(w / 42f);
-        tp.setAlpha(160);
-        canvas.drawText("GPS Map Camera", textLeft, top + padding * 1.5f, tp);
+    float left = (w - cardWidth) / 2f;
+    float top = h - cardHeight - (20 * dp);
 
-        tp.setAlpha(255);
-        tp.setTypeface(Typeface.create(Typeface.DEFAULT_BOLD, Typeface.BOLD));
-        tp.setTextSize(w / 24f);
-        canvas.drawText(extractMainLocation(addr), textLeft, top + padding * 3.0f, tp);
+    // Background (classic_template_bg)
+    Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
+    bg.setColor(Color.parseColor("#99000000"));
+    canvas.drawRoundRect(new RectF(left, top, left + cardWidth, top + cardHeight),
+            18 * dp, 18 * dp, bg);
 
-        tp.setTypeface(Typeface.DEFAULT);
-        tp.setTextSize(w / 38f);
-        StaticLayout sl = new StaticLayout(addr, tp, (int) textWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
-        canvas.save();
-        canvas.translate(textLeft, top + padding * 3.8f);
-        sl.draw(canvas);
-        canvas.restore();
+    // === MAP ===
+    RectF mapRect = new RectF(
+            left + cardPadding,
+            top + cardPadding,
+            left + cardPadding + mapSize,
+            top + cardPadding + mapSize
+    );
 
-        float coordY = top + padding * 4.5f + sl.getHeight();
-        
-        // Ikon Pin
-        try {
-            Bitmap pinBmp = BitmapFactory.decodeStream(form.openAsset(pinName));
-            if (pinBmp != null) {
-                float pinSize = w / 32f;
-                canvas.drawBitmap(pinBmp, null, new RectF(textLeft, coordY - pinSize, textLeft + pinSize, coordY), new Paint(Paint.ANTI_ALIAS_FLAG));
-                textLeft += pinSize + (padding * 0.3f);
-            }
-        } catch (Exception ignored) {}
+    try {
+        Bitmap map = BitmapFactory.decodeFile("/mnt/data/map.png");
+        canvas.drawBitmap(map, null, mapRect, null);
+    } catch (Exception e) {}
 
-        tp.setColor(Color.parseColor("#009688"));
-        tp.setTextSize(w / 36f);
-        canvas.drawText("Lat " + lat + " | Long " + lon, textLeft, coordY, tp);
-        
-        tp.setColor(Color.WHITE);
-        canvas.drawText(formatTanggalIndonesia(time), textLeft, coordY + padding * 1.2f, tp);
-    }
+    // === TEXT AREA ===
+    float textX = mapRect.right + spacing;
+    float y = top + cardPadding + (20 * dp);
+
+    TextPaint title = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    title.setColor(Color.WHITE);
+    title.setTextSize(14 * dp);
+    title.setTypeface(Typeface.DEFAULT_BOLD);
+
+    canvas.drawText(extractMainLocation(addr), textX, y, title);
+
+    // ADDRESS
+    TextPaint body = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    body.setColor(Color.WHITE);
+    body.setTextSize(10 * dp);
+
+    StaticLayout sl = StaticLayout.Builder
+            .obtain(addr, 0, addr.length(), body, (int)(cardWidth - mapSize - 40))
+            .build();
+
+    canvas.save();
+    canvas.translate(textX, y + (15 * dp));
+    sl.draw(canvas);
+    canvas.restore();
+
+    float textBottom = y + (15 * dp) + sl.getHeight();
+
+    // LAT LONG
+    canvas.drawText("Lat " + lat + " | Long " + lon,
+            textX, textBottom + (15 * dp), body);
+
+    // DATE
+    canvas.drawText(formatTanggalIndonesia(time),
+            textX, textBottom + (30 * dp), body);
+}
 
    private String formatTanggalIndonesia(String input) {
     try {
