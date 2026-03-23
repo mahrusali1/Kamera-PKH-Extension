@@ -291,7 +291,7 @@ if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
 }
 
 // Jarak dari Title ke Alamat (12 dp agar renggang)
-y = titleY + layout.getHeight() + (6 * dp);
+y = titleY + layout.getHeight() + (2 * dp);
 
 canvas.save();
 canvas.translate(textX, y);
