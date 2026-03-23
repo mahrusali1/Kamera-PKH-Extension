@@ -1,12 +1,12 @@
 private void drawByTemplate(android.graphics.Canvas canvas, String addr, String lat, String lon,
                             String time, int w, int h) {
 
-    // 1. PENYESUAIAN SKALA BERDASARKAN XML (7sp & 10sp)
+    // 1. PENYESUAIAN SKALA (7sp & 10sp sesuai xml)
     float density = canvas.getDensity() / 160f;
     if (density <= 0) density = 1.0f; 
 
-    float fontSizeTitle = 10 * density; // Sesuai advance_template.xml
-    float fontSizeDetail = 7 * density;  // Sesuai advance_template.xml
+    float fontSizeTitle = 10 * density; 
+    float fontSizeDetail = 7 * density;
     float padding = 8 * density;
 
     float cardWidth = w * 0.94f;
@@ -14,24 +14,25 @@ private void drawByTemplate(android.graphics.Canvas canvas, String addr, String 
     float left = (w - cardWidth) / 2f;
     float top = h - cardHeight - (h * 0.04f);
 
-    // 2. BACKGROUND HITAM TRANSPARAN (CC = 80% Opacity)
-    Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
-    bg.setColor(Color.BLACK);
-    bg.setAlpha(204); 
-    canvas.drawRoundRect(new RectF(left, top, left + cardWidth, top + cardHeight), 20, 20, bg);
+    // 2. BACKGROUND HITAM TRANSPARAN
+    android.graphics.Paint bg = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    bg.setColor(android.graphics.Color.BLACK);
+    bg.setAlpha(180); 
+    canvas.drawRoundRect(new android.graphics.RectF(left, top, left + cardWidth, top + cardHeight), 20, 20, bg);
 
-    // 3. PETA SATELIT (SISI KIRI)
+    // 3. PETA SATELIT
     float mapSize = cardHeight * 0.85f;
     float mapLeft = left + padding;
     float mapTop = top + (cardHeight - mapSize) / 2f;
 
     try {
         String mapUrl = "https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=17&l=sat&size=400,400";
-        Bitmap map = BitmapFactory.decodeStream(new URL(mapUrl).openConnection().getInputStream());
+        java.net.URL url = new java.net.URL(mapUrl);
+        android.graphics.Bitmap map = android.graphics.BitmapFactory.decodeStream(url.openConnection().getInputStream());
         if (map != null) {
-            RectF mapRect = new RectF(mapLeft, mapTop, mapLeft + mapSize, mapTop + mapSize);
-            Path path = new Path();
-            path.addRoundRect(mapRect, 12, 12, Path.Direction.CW);
+            android.graphics.RectF mapRect = new android.graphics.RectF(mapLeft, mapTop, mapLeft + mapSize, mapTop + mapSize);
+            android.graphics.Path path = new android.graphics.Path();
+            path.addRoundRect(mapRect, 12, 12, android.graphics.Path.Direction.CW);
             canvas.save();
             canvas.clipPath(path);
             canvas.drawBitmap(map, null, mapRect, null);
@@ -39,75 +40,72 @@ private void drawByTemplate(android.graphics.Canvas canvas, String addr, String 
         }
     } catch (Exception ignored) {}
 
-    // 4. HEADER "GPS MAP CAMERA" (RATA KANAN SEMPURNA)
+    // 4. HEADER "GPS MAP CAMERA" (RATA KANAN)
     String headerTxt = "📷 GPS Map Camera ✏️";
-    Paint hTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    hTextPaint.setColor(Color.WHITE);
+    android.graphics.Paint hTextPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    hTextPaint.setColor(android.graphics.Color.WHITE);
     hTextPaint.setTextSize(fontSizeDetail);
-    hTextPaint.setTypeface(Typeface.DEFAULT_BOLD);
+    hTextPaint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
 
     float hWidth = hTextPaint.measureText(headerTxt) + (padding * 2);
     float hHeight = fontSizeTitle * 1.6f;
     float hLeft = (left + cardWidth) - hWidth - 10; 
     float hTop = top - (hHeight * 0.65f);
 
-    Paint hBg = new Paint(Paint.ANTI_ALIAS_FLAG);
-    hBg.setColor(Color.parseColor("#333333"));
-    hBg.setAlpha(255); // Kotak kecil lebih pekat agar terlihat terpisah
-    canvas.drawRoundRect(new RectF(hLeft, hTop, hLeft + hWidth, hTop + hHeight), 12, 12, hBg);
+    android.graphics.Paint hBg = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    hBg.setColor(android.graphics.Color.parseColor("#333333"));
+    hBg.setAlpha(255);
+    canvas.drawRoundRect(new android.graphics.RectF(hLeft, hTop, hLeft + hWidth, hTop + hHeight), 12, 12, hBg);
     canvas.drawText(headerTxt, hLeft + padding, hTop + (hHeight * 0.72f), hTextPaint);
 
-    // 5. AREA DATA (JUDUL DIAMBIL DARI KECAMATAN & KABUPATEN)
+    // 5. LOGIKA JUDUL (Kecamatan & Kabupaten)
+    String[] parts = addr.split(",");
+    String kec = "";
+    String kab = "";
+
+    // Mengambil bagian alamat secara dinamis (biasanya bagian akhir sebelum kode pos/negara)
+    if (parts.length >= 4) {
+        kec = parts[parts.length - 4].trim(); // Posisi Kecamatan
+        kab = parts[parts.length - 3].trim(); // Posisi Kabupaten
+    } else {
+        kec = (parts.length > 0) ? parts[0].trim() : "Lokasi";
+        kab = (parts.length > 1) ? parts[1].trim() : "";
+    }
+    
+    String judulFix = kec + (kab.isEmpty() ? "" : ", " + kab) + ", Indonesia 🇮🇩";
+
+    // 6. AREA TEKS (ANTI-TUMPUK)
     float textLeft = mapLeft + mapSize + (padding * 1.2f);
     float textWidth = (left + cardWidth) - textLeft - padding;
 
-    // Logika Judul: Jika variabel addr mengandung koma, kita ambil bagian spesifiknya
-    String[] parts = addr.split(",");
-    String kec = "Kecamatan";
-    String kab = "Kabupaten";
-
-    // Biasanya dalam Geocoder: [0]Jalan, [1]Desa, [2]Kecamatan, [3]Kabupaten
-    if (parts.length >= 4) {
-        kec = parts[2].trim();
-        kab = parts[3].trim();
-    } else if (parts.length >= 2) {
-        kec = parts[0].trim();
-        kab = parts[1].trim();
-    }
-    
-    String judulFix = kec + ", " + kab + ", Indonesia 🇮🇩";
-
-    TextPaint tpTitle = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    tpTitle.setColor(Color.WHITE);
+    android.text.TextPaint tpTitle = new android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    tpTitle.setColor(android.graphics.Color.WHITE);
     tpTitle.setTextSize(fontSizeTitle);
-    tpTitle.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+    tpTitle.setTypeface(android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD));
 
-    TextPaint tpDetail = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    tpDetail.setColor(Color.WHITE);
+    android.text.TextPaint tpDetail = new android.text.TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    tpDetail.setColor(android.graphics.Color.WHITE);
     tpDetail.setTextSize(fontSizeDetail);
 
     canvas.save();
-    // Translate ke posisi awal teks (atas)
     canvas.translate(textLeft, top + padding + (fontSizeTitle * 0.7f));
 
-    // Gambar Judul (Kecamatan, Kabupaten)
-    StaticLayout slTitle = new StaticLayout(judulFix, tpTitle, (int) textWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+    // Gambar Judul
+    android.text.StaticLayout slTitle = new android.text.StaticLayout(judulFix, tpTitle, (int) textWidth, android.text.Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
     slTitle.draw(canvas);
     
-    // Geser ke bawah berdasarkan tinggi judul
-    canvas.translate(0, slTitle.getHeight() + (1 * density));
+    // Spasi otomatis ke bawah
+    canvas.translate(0, slTitle.getHeight() + (2 * density));
 
-    // Gambar Alamat Lengkap
-    StaticLayout slAddr = new StaticLayout(addr, tpDetail, (int) textWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+    // Gambar Alamat
+    android.text.StaticLayout slAddr = new android.text.StaticLayout(addr, tpDetail, (int) textWidth, android.text.Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
     slAddr.draw(canvas);
     
-    // Geser lagi untuk koordinat
+    // Spasi ke baris koordinat
     canvas.translate(0, slAddr.getHeight() + (4 * density));
 
-    // Gambar Lat Long
+    // Gambar Koordinat & Waktu
     canvas.drawText("Lat " + lat + "° Long " + lon + "°", 0, 0, tpDetail);
-    
-    // Gambar Waktu
     canvas.drawText(formatTanggalIndonesia(time), 0, fontSizeDetail * 1.5f, tpDetail);
 
     canvas.restore();
