@@ -14,7 +14,7 @@ import android.text.TextPaint;
 import android.text.Layout;
 
 @DesignerComponent(version = 1,
-    description = "Ekstensi GPS Map Camera PKH - Fix Map & Auto Wrap Text.",
+    description = "Ekstensi GPS Map Camera PKH - Versi Final Auto Wrap & Smart Location.",
     category = ComponentCategory.EXTENSION,
     nonVisible = true,
     iconName = "images/extension.png")
@@ -26,7 +26,7 @@ public class GPSExtension extends AndroidNonvisibleComponent {
         super(container.$form());
     }
 
-    @SimpleFunction(description = "Generate Watermark sesuai Template 1 dengan Auto Wrap Text.")
+    @SimpleFunction(description = "Generate Watermark sesuai Template 1, 2, atau 3.")
     public void GenerateWatermark(final String imagePath, final String inputLat, final String inputLong, 
                                  final String inputDateTime, final String saveLocation, 
                                  final String fileName, final int templateType) {
@@ -34,13 +34,25 @@ public class GPSExtension extends AndroidNonvisibleComponent {
             @Override
             public void run() {
                 try {
+                    // 1. Ambil Alamat dari OpenStreetMap
                     final String finalAddress = fetchAddress(inputLat, inputLong);
-                    Bitmap original = BitmapFactory.decodeFile(imagePath);
+
+                    // 2. Olah Gambar
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inMutable = true;
+                    Bitmap original = BitmapFactory.decodeFile(imagePath, options);
+                    
+                    if (original == null) {
+                        throw new Exception("File foto tidak ditemukan atau rusak");
+                    }
+
                     Bitmap mutable = original.copy(Bitmap.Config.ARGB_8888, true);
                     android.graphics.Canvas canvas = new android.graphics.Canvas(mutable);
 
+                    // 3. Gambar Watermark
                     drawByTemplate(canvas, templateType, finalAddress, inputLat, inputLong, inputDateTime, mutable.getWidth(), mutable.getHeight());
 
+                    // 4. Simpan Hasil
                     java.io.File dir = new java.io.File(saveLocation);
                     if (!dir.exists()) dir.mkdirs();
                     
@@ -68,47 +80,62 @@ public class GPSExtension extends AndroidNonvisibleComponent {
 
     private void drawByTemplate(android.graphics.Canvas canvas, int type, String addr, String lat, String lon, String time, int w, int h) {
         if (type == 1) {
+            // Pengaturan Ukuran Berdasarkan Orientasi Foto
             float cardWidth = w * 0.96f;
-            float cardHeight = h * 0.30f; // Tinggi ditambah sedikit untuk menampung teks wrap
+            float cardHeight = (h > w) ? h * 0.20f : h * 0.30f; 
             float margin = (w - cardWidth) / 2f;
             float cardTop = h - cardHeight - (h * 0.03f);
 
-            // 1. Gambar Background Card
+            // 1. Background Kartu (Abu-abu Gelap Rounded)
             Paint bg = new Paint();
             bg.setColor(Color.parseColor("#4D4D4D"));
             bg.setAlpha(225);
             bg.setAntiAlias(true);
             RectF rect = new RectF(margin, cardTop, margin + cardWidth, cardTop + cardHeight);
-            canvas.drawRoundRect(rect, 35, 35, bg);
+            canvas.drawRoundRect(rect, 30, 30, bg);
 
-            // 2. Ambil Peta Satelit
-            float mapSize = cardHeight * 0.85f;
+            // 2. Gambar Peta Satelit di Kiri
+            float mapSize = cardHeight * 0.82f;
             float mapMargin = (cardHeight - mapSize) / 2f;
             try {
-                String mapUrl = "https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=16&l=sat&size=350,350";
+                String mapUrl = "https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=16&l=sat&size=300,300";
                 URL url = new URL(mapUrl);
                 Bitmap map = BitmapFactory.decodeStream(url.openConnection().getInputStream());
                 if (map != null) {
                     RectF mRect = new RectF(margin + mapMargin, cardTop + mapMargin, margin + mapMargin + mapSize, cardTop + mapMargin + mapSize);
                     canvas.drawBitmap(map, null, mRect, null);
                 }
-            } catch (Exception e) {}
+            } catch (Exception e) {
+                // Jika gagal download peta, kotak tetap ada tapi abu-abu
+                Paint mapBg = new Paint();
+                mapBg.setColor(Color.GRAY);
+                canvas.drawRect(margin + mapMargin, cardTop + mapMargin, margin + mapMargin + mapSize, cardTop + mapMargin + mapSize, mapBg);
+            }
 
-            // 3. Persiapan Teks
+            // 3. Logika Mencari Nama Kecamatan
+            String kecName = "Kecamatan";
+            String[] parts = addr.split(",");
+            for (String p : parts) {
+                if (p.toLowerCase().contains("kecamatan") || p.toLowerCase().contains("kec.")) {
+                    kecName = p.trim();
+                    break;
+                }
+            }
+
+            // 4. Gambar Teks
             TextPaint tp = new TextPaint();
             tp.setAntiAlias(true);
             tp.setColor(Color.WHITE);
             float textLeft = margin + mapSize + (mapMargin * 2);
             float availableWidth = cardWidth - mapSize - (mapMargin * 3);
 
-            // --- BARIS 1: KECAMATAN & PROVINSI (BOLD) ---
-            tp.setTextSize(w / 24f);
+            // Baris 1: Judul (Kecamatan + Bendera)
+            tp.setTextSize(w / 26f);
             tp.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-            String kecName = "Kecamatan " + (addr.contains(",") ? addr.split(",")[addr.split(",").length-4].trim() : "Lokasi");
             canvas.drawText(kecName + ", Jawa Timur 🇮🇩", textLeft, cardTop + (cardHeight * 0.22f), tp);
 
-            // --- BARIS 2: ALAMAT LENGKAP (AUTO WRAP) ---
-            tp.setTextSize(w / 35f);
+            // Baris 2: Alamat (Auto Wrap)
+            tp.setTextSize(w / 38f);
             tp.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
             StaticLayout sl = new StaticLayout(addr, tp, (int)availableWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             canvas.save();
@@ -116,35 +143,10 @@ public class GPSExtension extends AndroidNonvisibleComponent {
             sl.draw(canvas);
             canvas.restore();
 
-            // --- BARIS 3: LAT LONG & WAKTU (DI BAWAH TEKS WRAP) ---
-            float textBottom = cardTop + (cardHeight * 0.75f);
-            canvas.drawText("Lat " + lat + "°  Long " + lon + "°", textLeft, textBottom, tp);
-            canvas.drawText(time + " GMT +07:00", textLeft, textBottom + (cardHeight * 0.15f), tp);
-        }
-    }
+            // Baris 3 & 4: GPS & Waktu (Posisi Dinamis di Bawah Wrap Text)
+            float infoTop = cardTop + (cardHeight * 0.78f);
+            canvas.drawText("Lat " + lat + "°  Long " + lon + "°", textLeft, infoTop, tp);
+            canvas.drawText(time + " GMT +07:00", textLeft, infoTop + (cardHeight * 0.12f), tp);
 
-    private String fetchAddress(String lat, String lon) {
-        try {
-            URL url = new URL("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon);
-            HttpURLConnection c = (HttpURLConnection) url.openConnection();
-            c.setRequestProperty("User-Agent", "PKH-App");
-            Scanner s = new Scanner(c.getInputStream()).useDelimiter("\\A");
-            String res = s.hasNext() ? s.next() : "";
-            if (res.contains("display_name")) {
-                int start = res.indexOf("display_name") + 15;
-                return res.substring(start, res.indexOf("\"", start));
-            }
-        } catch (Exception e) {}
-        return "Alamat tidak ditemukan";
-    }
-
-    @SimpleEvent(description = "Event Selesai.") 
-    public void OnAddressFound(String address, String resultPath) {
-        EventDispatcher.dispatchEvent(this, "OnAddressFound", address, resultPath);
-    }
-
-    @SimpleEvent(description = "Event Error.") 
-    public void OnError(String message) {
-        EventDispatcher.dispatchEvent(this, "OnError", message);
-    }
-}
+        } else {
+            // Template Sederhana (Jika
