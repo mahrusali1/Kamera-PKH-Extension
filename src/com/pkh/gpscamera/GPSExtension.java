@@ -31,18 +31,13 @@ public class GPSExtension extends AndroidNonvisibleComponent {
             @Override
             public void run() {
                 try {
-                    // 1. Reverse Geocoding (OSM) - Variabel dibuat FINAL agar bisa diakses inner class
                     final String finalAddress = fetchAddress(inputLat, inputLong);
-
-                    // 2. Load Bitmap
                     Bitmap original = BitmapFactory.decodeFile(imagePath);
                     Bitmap mutable = original.copy(Bitmap.Config.ARGB_8888, true);
                     android.graphics.Canvas canvas = new android.graphics.Canvas(mutable);
 
-                    // 3. Draw Berdasarkan Template Pilihann
                     drawByTemplate(canvas, templateType, finalAddress, inputLat, inputLong, inputDateTime, mutable.getWidth(), mutable.getHeight());
 
-                    // 4. Save Final Image
                     java.io.File dir = new java.io.File(saveLocation);
                     if (!dir.exists()) dir.mkdirs();
                     
@@ -69,62 +64,59 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     }
 
     private void drawByTemplate(android.graphics.Canvas canvas, int type, String addr, String lat, String lon, String time, int w, int h) {
-    if (type == 1) {
         Paint p = new Paint();
         p.setAntiAlias(true);
         p.setColor(Color.WHITE);
 
-        // 1. Tentukan dimensi kartu (Card)
-        float cardWidth = w * 0.95f;
-        float cardHeight = h * 0.25f;
-        float margin = (w - cardWidth) / 2f;
-        float bottomMargin = h * 0.05f;
-        float cardTop = h - cardHeight - bottomMargin;
-
-        // 2. Gambar Background Kartu (Abu-abu Gelap Membulat)
         Paint bg = new Paint();
-        bg.setColor(Color.parseColor("#4D4D4D")); // Warna abu-abu gelap sesuai gambar
-        bg.setAlpha(230);
-        RectF rect = new RectF(margin, cardTop, margin + cardWidth, cardTop + cardHeight);
-        canvas.drawRoundRect(rect, 30, 30, bg);
+        bg.setAntiAlias(true);
 
-        // 3. Layout Peta Mini (Placeholder Kotak di Kiri)
-        float mapSize = cardHeight * 0.8f;
-        float mapMargin = (cardHeight - mapSize) / 2f;
-        Paint mapBg = new Paint();
-        mapBg.setColor(Color.LTGRAY);
-        RectF mapRect = new RectF(margin + mapMargin, cardTop + mapMargin, margin + mapMargin + mapSize, cardTop + mapMargin + mapSize);
-        canvas.drawRoundRect(mapRect, 20, 20, mapBg);
-        
-        // 4. Pengaturan Teks di Sisi Kanan Peta
-        float textLeft = margin + mapSize + (mapMargin * 2);
-        float lineSpacing = cardHeight / 5.5f;
+        if (type == 1) {
+            // --- TEMPLATE 1: SESUAI GAMBAR CONTOH ---
+            float cardWidth = w * 0.95f;
+            float cardHeight = h * 0.25f;
+            float margin = (w - cardWidth) / 2f;
+            float bottomMargin = h * 0.05f;
+            float cardTop = h - cardHeight - bottomMargin;
 
-        // Baris 1: Judul Lokasi (Bold)
-        p.setTextSize(w / 24f);
-        p.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        String title = "Kecamatan " + (addr.contains(",") ? addr.split(",")[2].trim() : "Lokasi");
-        canvas.drawText(title + " 🇮🇩", textLeft, cardTop + lineSpacing, p);
+            bg.setColor(Color.parseColor("#4D4D4D"));
+            bg.setAlpha(230);
+            RectF rect = new RectF(margin, cardTop, margin + cardWidth, cardTop + cardHeight);
+            canvas.drawRoundRect(rect, 30, 30, bg);
 
-        // Baris 2: Alamat Lengkap (Normal & Kecil)
-        p.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
-        p.setTextSize(w / 32f);
-        // Membagi alamat agar tidak terlalu panjang
-        String addressLine = addr.length() > 60 ? addr.substring(0, 57) + "..." : addr;
-        canvas.drawText(addressLine, textLeft, cardTop + (lineSpacing * 2.2f), p);
+            float mapSize = cardHeight * 0.8f;
+            float mapMargin = (cardHeight - mapSize) / 2f;
+            Paint mapBg = new Paint();
+            mapBg.setColor(Color.LTGRAY);
+            RectF mapRect = new RectF(margin + mapMargin, cardTop + mapMargin, margin + mapMargin + mapSize, cardTop + mapMargin + mapSize);
+            canvas.drawRoundRect(mapRect, 20, 20, mapBg);
+            
+            float textLeft = margin + mapSize + (mapMargin * 2);
+            float lineSpacing = cardHeight / 5.5f;
 
-        // Baris 3: Koordinat Lat Long
-        canvas.drawText("Lat " + lat + "°  Long " + lon + "°", textLeft, cardTop + (lineSpacing * 3.4f), p);
+            p.setTextSize(w / 24f);
+            p.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+            String title = "Kecamatan " + (addr.contains(",") ? addr.split(",")[2].trim() : "Lokasi");
+            canvas.drawText(title + " 🇮🇩", textLeft, cardTop + lineSpacing, p);
 
-        // Baris 4: Waktu (Senin, 23/03/2026 ...)
-        canvas.drawText(time + " GMT +07:00", textLeft, cardTop + (lineSpacing * 4.6f), p);
-    }            
+            p.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
+            p.setTextSize(w / 32f);
+            String addressLine = addr.length() > 60 ? addr.substring(0, 57) + "..." : addr;
+            canvas.drawText(addressLine, textLeft, cardTop + (lineSpacing * 2.2f), p);
+            canvas.drawText("Lat " + lat + "°  Long " + lon + "°", textLeft, cardTop + (lineSpacing * 3.4f), p);
+            canvas.drawText(time + " GMT +07:00", textLeft, cardTop + (lineSpacing * 4.6f), p);
+        } 
         else if (type == 2) {
+            bg.setColor(Color.BLACK);
+            bg.setAlpha(160);
             canvas.drawRect(w/2f, h - (h/6f), w, h, bg);
+            p.setTextSize(w/28f);
             canvas.drawText(lat + ", " + lon, w/2f + 20, h - (h/10f), p);
             canvas.drawText(time, w/2f + 20, h - (h/20f), p);
         }
         else {
+            bg.setColor(Color.BLACK);
+            bg.setAlpha(160);
             canvas.drawRect(0, h - (h/5f), w, h, bg);
             p.setTextSize(w/30f);
             canvas.drawText(addr, 20, h - (h/8f), p);
