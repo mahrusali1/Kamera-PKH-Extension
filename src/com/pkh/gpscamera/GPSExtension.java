@@ -34,25 +34,20 @@ public class GPSExtension extends AndroidNonvisibleComponent {
             @Override
             public void run() {
                 try {
-                    // 1. Ambil Alamat dari OpenStreetMap
                     final String finalAddress = fetchAddress(inputLat, inputLong);
-
-                    // 2. Olah Gambar
                     BitmapFactory.Options options = new BitmapFactory.Options();
                     options.inMutable = true;
                     Bitmap original = BitmapFactory.decodeFile(imagePath, options);
                     
                     if (original == null) {
-                        throw new Exception("File foto tidak ditemukan atau rusak");
+                        throw new Exception("File foto tidak ditemukan");
                     }
 
                     Bitmap mutable = original.copy(Bitmap.Config.ARGB_8888, true);
                     android.graphics.Canvas canvas = new android.graphics.Canvas(mutable);
 
-                    // 3. Gambar Watermark
                     drawByTemplate(canvas, templateType, finalAddress, inputLat, inputLong, inputDateTime, mutable.getWidth(), mutable.getHeight());
 
-                    // 4. Simpan Hasil
                     java.io.File dir = new java.io.File(saveLocation);
                     if (!dir.exists()) dir.mkdirs();
                     
@@ -80,13 +75,11 @@ public class GPSExtension extends AndroidNonvisibleComponent {
 
     private void drawByTemplate(android.graphics.Canvas canvas, int type, String addr, String lat, String lon, String time, int w, int h) {
         if (type == 1) {
-            // Pengaturan Ukuran Berdasarkan Orientasi Foto
             float cardWidth = w * 0.96f;
             float cardHeight = (h > w) ? h * 0.20f : h * 0.30f; 
             float margin = (w - cardWidth) / 2f;
             float cardTop = h - cardHeight - (h * 0.03f);
 
-            // 1. Background Kartu (Abu-abu Gelap Rounded)
             Paint bg = new Paint();
             bg.setColor(Color.parseColor("#4D4D4D"));
             bg.setAlpha(225);
@@ -94,7 +87,6 @@ public class GPSExtension extends AndroidNonvisibleComponent {
             RectF rect = new RectF(margin, cardTop, margin + cardWidth, cardTop + cardHeight);
             canvas.drawRoundRect(rect, 30, 30, bg);
 
-            // 2. Gambar Peta Satelit di Kiri
             float mapSize = cardHeight * 0.82f;
             float mapMargin = (cardHeight - mapSize) / 2f;
             try {
@@ -106,13 +98,11 @@ public class GPSExtension extends AndroidNonvisibleComponent {
                     canvas.drawBitmap(map, null, mRect, null);
                 }
             } catch (Exception e) {
-                // Jika gagal download peta, kotak tetap ada tapi abu-abu
                 Paint mapBg = new Paint();
                 mapBg.setColor(Color.GRAY);
                 canvas.drawRect(margin + mapMargin, cardTop + mapMargin, margin + mapMargin + mapSize, cardTop + mapMargin + mapSize, mapBg);
             }
 
-            // 3. Logika Mencari Nama Kecamatan
             String kecName = "Kecamatan";
             String[] parts = addr.split(",");
             for (String p : parts) {
@@ -122,19 +112,16 @@ public class GPSExtension extends AndroidNonvisibleComponent {
                 }
             }
 
-            // 4. Gambar Teks
             TextPaint tp = new TextPaint();
             tp.setAntiAlias(true);
             tp.setColor(Color.WHITE);
             float textLeft = margin + mapSize + (mapMargin * 2);
             float availableWidth = cardWidth - mapSize - (mapMargin * 3);
 
-            // Baris 1: Judul (Kecamatan + Bendera)
             tp.setTextSize(w / 26f);
             tp.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
             canvas.drawText(kecName + ", Jawa Timur 🇮🇩", textLeft, cardTop + (cardHeight * 0.22f), tp);
 
-            // Baris 2: Alamat (Auto Wrap)
             tp.setTextSize(w / 38f);
             tp.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
             StaticLayout sl = new StaticLayout(addr, tp, (int)availableWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -143,10 +130,41 @@ public class GPSExtension extends AndroidNonvisibleComponent {
             sl.draw(canvas);
             canvas.restore();
 
-            // Baris 3 & 4: GPS & Waktu (Posisi Dinamis di Bawah Wrap Text)
             float infoTop = cardTop + (cardHeight * 0.78f);
             canvas.drawText("Lat " + lat + "°  Long " + lon + "°", textLeft, infoTop, tp);
             canvas.drawText(time + " GMT +07:00", textLeft, infoTop + (cardHeight * 0.12f), tp);
 
         } else {
-            // Template Sederhana (Jika
+            Paint p = new Paint();
+            p.setColor(Color.WHITE);
+            p.setAntiAlias(true);
+            p.setTextSize(w / 30f);
+            canvas.drawText(lat + ", " + lon + " | " + time, 20, h - 50, p);
+        }
+    }
+
+    private String fetchAddress(String lat, String lon) {
+        try {
+            URL url = new URL("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon);
+            HttpURLConnection c = (HttpURLConnection) url.openConnection();
+            c.setRequestProperty("User-Agent", "SKP-Click-App");
+            Scanner s = new Scanner(c.getInputStream()).useDelimiter("\\A");
+            String res = s.hasNext() ? s.next() : "";
+            if (res.contains("display_name")) {
+                int start = res.indexOf("display_name") + 15;
+                return res.substring(start, res.indexOf("\"", start));
+            }
+        } catch (Exception e) {}
+        return "Alamat tidak ditemukan";
+    }
+
+    @SimpleEvent(description = "Proses Berhasil.") 
+    public void OnAddressFound(String address, String resultPath) {
+        EventDispatcher.dispatchEvent(this, "OnAddressFound", address, resultPath);
+    }
+
+    @SimpleEvent(description = "Proses Error.") 
+    public void OnError(String message) {
+        EventDispatcher.dispatchEvent(this, "OnError", message);
+    }
+}
