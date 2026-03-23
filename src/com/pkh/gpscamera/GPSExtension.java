@@ -305,7 +305,7 @@ canvas.drawText("Lat " + lat + " | Long " + lon, textX, y, body);
 // Posisi Tanggal
 y += 11 * dp;
 canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
-            
+    }            
    private String formatTanggalIndonesia(String input) {
     try {
         java.text.SimpleDateFormat inputFormat = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
