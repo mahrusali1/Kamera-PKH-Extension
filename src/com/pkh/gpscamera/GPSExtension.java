@@ -84,7 +84,7 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     float cardHeight = mapSize + (padding * 1.3f);
 
     float left = (w - cardWidth) / 2f;
-    float top = h - cardHeight - (8 * dp);
+    float top = h - cardHeight - (15 * dp);
 
     // === LOAD FONT (HANYA SEKALI) ===
     // === LOAD FONT AMAN (ANTI ERROR APP INVENTOR) ===
@@ -239,7 +239,7 @@ title.setTextSize(14 * dp);
 title.setTypeface(fontMedium);
 
 // 🔥 POSISI LEBIH ATAS (BIAR GA NUMPUK)
-float titleY = top + padding + (2 * dp);
+float titleY = top + padding ;
 
 StaticLayout layout;
 
@@ -284,17 +284,17 @@ String line2 = parts.length > 1 ? parts[1] + ", " +
 canvas.drawText(line1.trim(), textX, y, body);
 
 // BARIS 2
-y += 7 * dp;
+y += 10 * dp;
 canvas.drawText(line2.trim(), textX, y, body);
 
 
 
 // LAT LONG
-y += 7 * dp;
+y += 10 * dp;
 canvas.drawText("Lat " + lat + " | Long " + lon, textX, y, body);
 
 // DATE
-y += 7 * dp;
+y += 10 * dp;
 canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
     }
 
