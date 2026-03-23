@@ -76,69 +76,95 @@ public class GPSExtension extends AndroidNonvisibleComponent {
 
     float dp = w / 360f;
 
-    float cardPadding = 12 * dp;
+    float padding = 12 * dp;
     float mapSize = 100 * dp;
-    float spacing = 8 * dp;
+    float spacing = 10 * dp;
 
-    float cardWidth = w * 0.92f;
-    float cardHeight = mapSize + (cardPadding * 2);
+    float cardWidth = w * 0.94f;
+    float cardHeight = mapSize + (padding * 2);
 
     float left = (w - cardWidth) / 2f;
     float top = h - cardHeight - (20 * dp);
 
-    // Background (classic_template_bg)
+    // === BACKGROUND ===
     Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
     bg.setColor(Color.parseColor("#99000000"));
-    canvas.drawRoundRect(new RectF(left, top, left + cardWidth, top + cardHeight),
-            18 * dp, 18 * dp, bg);
+    canvas.drawRoundRect(
+            new RectF(left, top, left + cardWidth, top + cardHeight),
+            25 * dp, 25 * dp, bg
+    );
 
     // === MAP ===
     RectF mapRect = new RectF(
-            left + cardPadding,
-            top + cardPadding,
-            left + cardPadding + mapSize,
-            top + cardPadding + mapSize
+            left + padding,
+            top + padding,
+            left + padding + mapSize,
+            top + padding + mapSize
     );
 
     try {
-        Bitmap map = BitmapFactory.decodeFile("/mnt/data/map.png");
+        URL url = new URL("https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=17&l=sat&size=300,300");
+        Bitmap map = BitmapFactory.decodeStream(url.openConnection().getInputStream());
         canvas.drawBitmap(map, null, mapRect, null);
     } catch (Exception e) {}
 
+    // === GOOGLE TEXT ===
+    Paint google = new Paint(Paint.ANTI_ALIAS_FLAG);
+    google.setColor(Color.WHITE);
+    google.setTextSize(14 * dp);
+    google.setFakeBoldText(true);
+    canvas.drawText("Google", mapRect.left + 10 * dp, mapRect.bottom - 10 * dp, google);
+
     // === TEXT AREA ===
     float textX = mapRect.right + spacing;
-    float y = top + cardPadding + (20 * dp);
+    float y = top + padding + (15 * dp);
 
+    // Header kecil
+    TextPaint header = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    header.setColor(Color.WHITE);
+    header.setAlpha(160);
+    header.setTextSize(12 * dp);
+    canvas.drawText("GPS Map Camera", textX, y, header);
+
+    // TITLE BESAR
     TextPaint title = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     title.setColor(Color.WHITE);
-    title.setTextSize(14 * dp);
+    title.setTextSize(18 * dp);
     title.setTypeface(Typeface.DEFAULT_BOLD);
 
-    canvas.drawText(extractMainLocation(addr), textX, y, title);
+    y += 20 * dp;
+    canvas.drawText(extractMainLocation(addr) + ", Indonesia 🇮🇩", textX, y, title);
 
     // ADDRESS
     TextPaint body = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     body.setColor(Color.WHITE);
-    body.setTextSize(10 * dp);
+    body.setTextSize(12 * dp);
+
+    y += 10 * dp;
 
     StaticLayout sl = StaticLayout.Builder
-            .obtain(addr, 0, addr.length(), body, (int)(cardWidth - mapSize - 40))
+            .obtain(addr, 0, addr.length(), body, (int)(cardWidth - mapSize - 50))
             .build();
 
     canvas.save();
-    canvas.translate(textX, y + (15 * dp));
+    canvas.translate(textX, y);
     sl.draw(canvas);
     canvas.restore();
 
-    float textBottom = y + (15 * dp) + sl.getHeight();
+    y += sl.getHeight() + 10 * dp;
+
+    // PLUS CODE (dummy dulu)
+    canvas.drawText("3Q8V+JC8", textX, y, body);
+
+    y += 15 * dp;
 
     // LAT LONG
-    canvas.drawText("Lat " + lat + " | Long " + lon,
-            textX, textBottom + (15 * dp), body);
+    canvas.drawText("Lat " + lat + " | Long " + lon, textX, y, body);
 
-    // DATE
-    canvas.drawText(formatTanggalIndonesia(time),
-            textX, textBottom + (30 * dp), body);
+    y += 15 * dp;
+
+    // DATE (FORMAT MIRIP ASLI)
+    canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
 }
 
    private String formatTanggalIndonesia(String input) {
