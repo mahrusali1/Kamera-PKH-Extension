@@ -241,7 +241,6 @@ title.setTypeface(fontMedium);
 // 🔥 POSISI LEBIH ATAS (BIAR GA NUMPUK)
 float titleY = top + padding + (2 * dp);
 
-// 🔥 PAKAI JSON (AKURAT KECAMATAN + PROVINSI)
 StaticLayout layout;
 
 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
@@ -259,8 +258,6 @@ if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
             false
     );
 }
-        .obtain(getWilayahIndonesia(addr), 0, getWilayahIndonesia(addr).length(), title, (int)(cardWidth - mapSize - 40*dp))
-        .build();
 
 canvas.save();
 canvas.translate(textX, titleY);
