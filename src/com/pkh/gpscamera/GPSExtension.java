@@ -31,8 +31,8 @@ public class GPSExtension extends AndroidNonvisibleComponent {
             @Override
             public void run() {
                 try {
-                    // 1. Reverse Geocoding (OSM)
-                    String address = fetchAddress(inputLat, inputLong);
+                    // 1. Reverse Geocoding (OSM) - Variabel dibuat FINAL agar bisa diakses inner class
+                    final String finalAddress = fetchAddress(inputLat, inputLong);
 
                     // 2. Load Bitmap
                     Bitmap original = BitmapFactory.decodeFile(imagePath);
@@ -40,9 +40,9 @@ public class GPSExtension extends AndroidNonvisibleComponent {
                     android.graphics.Canvas canvas = new android.graphics.Canvas(mutable);
 
                     // 3. Draw Berdasarkan Template Pilihan
-                    drawByTemplate(canvas, templateType, address, inputLat, inputLong, inputDateTime, mutable.getWidth(), mutable.getHeight());
+                    drawByTemplate(canvas, templateType, finalAddress, inputLat, inputLong, inputDateTime, mutable.getWidth(), mutable.getHeight());
 
-                    // 4. Save Final Image (DIPERBAIKI: Menggunakan java.io.File agar tidak bingung)
+                    // 4. Save Final Image
                     java.io.File dir = new java.io.File(saveLocation);
                     if (!dir.exists()) dir.mkdirs();
                     
@@ -54,10 +54,10 @@ public class GPSExtension extends AndroidNonvisibleComponent {
                     final String finalPath = outFile.getAbsolutePath();
                     form.runOnUiThread(new Runnable() {
                         @Override
-                        public void run() { OnAddressFound(address, finalPath); }
+                        public void run() { OnAddressFound(finalAddress, finalPath); }
                     });
 
-                } catch (Exception e) {
+                } catch (final Exception e) {
                     final String err = e.getMessage();
                     form.runOnUiThread(new Runnable() {
                         @Override
@@ -113,10 +113,13 @@ public class GPSExtension extends AndroidNonvisibleComponent {
         return "Alamat tidak ditemukan";
     }
 
-    @SimpleEvent public void OnAddressFound(String address, String resultPath) {
+    @SimpleEvent(description = "Event saat alamat ditemukan dan proses selesai.") 
+    public void OnAddressFound(String address, String resultPath) {
         EventDispatcher.dispatchEvent(this, "OnAddressFound", address, resultPath);
     }
-    @SimpleEvent public void OnError(String message) {
+
+    @SimpleEvent(description = "Event saat terjadi error pada proses.") 
+    public void OnError(String message) {
         EventDispatcher.dispatchEvent(this, "OnError", message);
     }
 }
