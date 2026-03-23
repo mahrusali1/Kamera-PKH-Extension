@@ -42,10 +42,11 @@ public class GPSExtension extends AndroidNonvisibleComponent {
                     // 3. Draw Berdasarkan Template Pilihan
                     drawByTemplate(canvas, templateType, address, inputLat, inputLong, inputDateTime, mutable.getWidth(), mutable.getHeight());
 
-                    // 4. Save Final Image
-                    File dir = new File(saveLocation);
+                    // 4. Save Final Image (DIPERBAIKI: Menggunakan java.io.File agar tidak bingung)
+                    java.io.File dir = new java.io.File(saveLocation);
                     if (!dir.exists()) dir.mkdirs();
-                    File outFile = new File(dir, fileName);
+                    
+                    java.io.File outFile = new java.io.File(dir, fileName);
                     FileOutputStream out = new FileOutputStream(outFile);
                     mutable.compress(Bitmap.CompressFormat.JPEG, 90, out);
                     out.close();
@@ -74,26 +75,22 @@ public class GPSExtension extends AndroidNonvisibleComponent {
         p.setTextSize(w / 25f);
         p.setShadowLayer(5f, 0f, 0f, Color.BLACK);
 
-        // Background Hitam Transparan
         Paint bg = new Paint();
         bg.setColor(Color.BLACK);
         bg.setAlpha(160);
 
         if (type == 1) {
-            // Template 1: Elegant (Sesuai desain awal Anda)
             canvas.drawRect(0, h - (h/4f), w, h, bg);
             canvas.drawText(addr, 40, h - (h/6f), p);
             canvas.drawText("Lat/Long: " + lat + ", " + lon, 40, h - (h/10f), p);
             canvas.drawText("Waktu: " + time, 40, h - (h/20f), p);
         } 
         else if (type == 2) {
-            // Template 2: Minimalist
             canvas.drawRect(w/2f, h - (h/6f), w, h, bg);
             canvas.drawText(lat + ", " + lon, w/2f + 20, h - (h/10f), p);
             canvas.drawText(time, w/2f + 20, h - (h/20f), p);
         }
         else {
-            // Template 3: Official (Full Width Bottom)
             canvas.drawRect(0, h - (h/5f), w, h, bg);
             p.setTextSize(w/30f);
             canvas.drawText(addr, 20, h - (h/8f), p);
