@@ -239,7 +239,7 @@ title.setTextSize(14 * dp);
 title.setTypeface(fontMedium);
 
 // 🔥 POSISI LEBIH ATAS (BIAR GA NUMPUK)
-float titleY = top + padding ;
+float titleY = top + padding - (15 * dp);
 
 StaticLayout layout;
 
