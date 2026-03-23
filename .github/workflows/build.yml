@@ -18,38 +18,40 @@ jobs:
         java-version: '8'
         distribution: 'temurin'
 
-    - name: Prepare MIT Template & Folders
+    - name: Setup Complete MIT Environment
       run: |
-        # 1. Clone template resmi ke folder sementara
-        git clone --recurse-submodules https://github.com/mit-cml/extension-template.git /tmp/template
+        # 1. Clone template resmi ke folder terpisah agar bersih
+        git clone --recurse-submodules https://github.com/mit-cml/extension-template.git build_dir
         
-        # 2. Ambil folder 'lib' dan 'build.xml' dari template ke root repo Anda
-        cp -r /tmp/template/lib .
-        cp /tmp/template/build.xml .
-
-        # 3. Pastikan file project.properties ada di root
-        echo "main.class=com.pkh.gpscamera.GPSExtension" > project.properties
+        # 2. Hapus file contoh bawaan template agar tidak bentrok
+        rm -rf build_dir/src/*
         
-        # 4. Pastikan folder 'out' bersih
-        mkdir -p out/extensions
+        # 3. Buat struktur folder package Anda di dalam build_dir
+        mkdir -p build_dir/src/com/pkh/gpscamera
+        
+        # 4. Salin file Java Anda dari repo utama ke folder kerja
+        cp src/com/pkh/gpscamera/GPSExtension.java build_dir/src/com/pkh/gpscamera/
+        
+        # 5. Buat file project.properties yang benar di dalam folder kerja
+        echo "main.class=com.pkh.gpscamera.GPSExtension" > build_dir/project.properties
 
     - name: Install Ant
       run: sudo apt-get install ant -y
 
-    - name: Build with Ant
+    - name: Execute Ant Build
       run: |
-        # Jalankan build. 
-        # PERHATIKAN: Ant akan mencari folder 'src' yang sudah Anda buat di repo GitHub Anda.
+        # Masuk ke folder kerja dan jalankan build
+        cd build_dir
         ant extensions
         
-        # CEK TOTAL: Apakah filenya lahir?
-        echo "--- DAFTAR FILE DI FOLDER OUT ---"
-        ls -R out/ || echo "Folder out kosong!"
+        # Pastikan file benar-benar ada sebelum upload
+        echo "--- ISI FOLDER OUTPUT ---"
+        ls -R out/extensions/
 
     - name: Upload AIX Result
       uses: actions/upload-artifact@v4
       with:
         name: Ekstensi-Kamera-PKH
-        # Gunakan path yang paling umum digunakan MIT
-        path: "out/extensions/*.aix"
+        # Arahkan path langsung ke folder build_dir
+        path: build_dir/out/extensions/*.aix
         if-no-files-found: error
