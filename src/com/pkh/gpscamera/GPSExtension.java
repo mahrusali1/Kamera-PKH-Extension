@@ -95,40 +95,39 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     private void drawByTemplate(android.graphics.Canvas canvas, String addr, String lat, String lon,
                             String time, int w, int h) {
 
-    // 1. KONFIGURASI DIMENSI & PADDING
-    float padding = w * 0.04f;
-    float cardWidth = w * 0.94f; // Sedikit lebih lebar agar elegan
-    float cardHeight = (h > w) ? h * 0.28f : h * 0.38f; 
+    // 1. KONFIGURASI SKALA (Agar ukuran sp/dp sesuai di semua HP)
+    float density = canvas.getDensity() / 160f;
+    if (density == 0) density = 1.0f; 
 
+    // Ambil nilai dari dimens.xml (8sp dan 10sp)
+    float fontSizeTitle = 10 * density; 
+    float fontSizeDetail = 8 * density;
+    float padding = 8 * density;
+
+    // Dimensi Card
+    float cardWidth = w * 0.94f;
+    float cardHeight = (h > w) ? h * 0.22f : h * 0.30f;
     float left = (w - cardWidth) / 2f;
-    float top = h - cardHeight - (h * 0.04f); // Jarak dari bawah foto
+    float top = h - cardHeight - (h * 0.04f);
 
-    // 2. BACKGROUND UTAMA (HITAM TRANSPARAN)
-    // Menggunakan warna hitam pekat dengan transparansi (Alpha)
-    Paint bg = new Paint();
+    // 2. BACKGROUND (HITAM TRANSPARAN #CC000000)
+    Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
     bg.setColor(Color.BLACK);
-    bg.setAlpha(165); // Nilai 0-255 (165 = sekitar 65% opacity)
-    bg.setAntiAlias(true);
-
-    RectF rect = new RectF(left, top, left + cardWidth, top + cardHeight);
-    canvas.drawRoundRect(rect, 30, 30, bg);
+    bg.setAlpha(204); // Ini adalah Hex CC (80% opacity)
+    canvas.drawRoundRect(new RectF(left, top, left + cardWidth, top + cardHeight), 20, 20, bg);
 
     // 3. PETA (SISI KIRI)
-    float mapSize = cardHeight * 0.85f; // Peta hampir setinggi kartu
-    float mapLeft = left + (cardHeight * 0.075f);
-    float mapTop = top + (cardHeight - mapSize) / 2f;
+    float mapSize = cardHeight - (padding * 2);
+    float mapLeft = left + padding;
+    float mapTop = top + padding;
 
     try {
-        // Menggunakan Yandex Static Maps (Satelit)
-        String mapUrl = "https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=16&l=sat&size=450,450";
-        URL url = new URL(mapUrl);
-        Bitmap map = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-
+        String mapUrl = "https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=16&l=sat&size=300,300";
+        Bitmap map = BitmapFactory.decodeStream(new URL(mapUrl).openConnection().getInputStream());
         if (map != null) {
             RectF mapRect = new RectF(mapLeft, mapTop, mapLeft + mapSize, mapTop + mapSize);
             Path path = new Path();
-            path.addRoundRect(mapRect, 15, 15, Path.Direction.CW); // Radius peta
-
+            path.addRoundRect(mapRect, 10, 10, Path.Direction.CW);
             canvas.save();
             canvas.clipPath(path);
             canvas.drawBitmap(map, null, mapRect, null);
@@ -137,78 +136,63 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     } catch (Exception ignored) {}
 
     // 4. HEADER "GPS MAP CAMERA" (RATA KANAN)
-    // Bagian ini sekarang dikunci ke sisi kanan tabel data
-    Paint headerBg = new Paint();
-    headerBg.setColor(Color.parseColor("#333333")); // Hitam abu-abu gelap
-    headerBg.setAlpha(220);
-    headerBg.setAntiAlias(true);
-
-    float headerWidth = w * 0.38f;
-    float headerHeight = cardHeight * 0.18f;
-    
-    // Posisi: (Batas Kanan Card) - (Lebar Header) - (Margin sedikit)
-    float headerLeft = (left + cardWidth) - headerWidth - 15; 
-    float headerTop = top - (headerHeight * 0.75f); 
-
-    RectF headerRect = new RectF(headerLeft, headerTop, headerLeft + headerWidth, headerTop + headerHeight);
-    canvas.drawRoundRect(headerRect, 12, 12, headerBg);
-
-    Paint hTextPaint = new Paint();
+    String headerTxt = "📷 GPS Map Camera ✏️";
+    Paint hTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     hTextPaint.setColor(Color.WHITE);
-    hTextPaint.setTextSize(w / 42f);
-    hTextPaint.setAntiAlias(true);
+    hTextPaint.setTextSize(fontSizeDetail);
     hTextPaint.setTypeface(Typeface.DEFAULT_BOLD);
 
-    // Menggambar teks di tengah kotak header
-    String headerText = "📷 GPS Map Camera ✏️";
-    float hTextX = headerRect.left + (headerRect.width() - hTextPaint.measureText(headerText)) / 2f;
-    float hTextY = headerRect.centerY() + (hTextPaint.getTextSize() / 3f);
-    canvas.drawText(headerText, hTextX, hTextY, hTextPaint);
+    float hWidth = hTextPaint.measureText(headerTxt) + (padding * 2);
+    float hHeight = fontSizeTitle * 1.8f;
+    float hLeft = (left + cardWidth) - hWidth - 5; // Kunci Rata Kanan
+    float hTop = top - (hHeight * 0.6f);
 
-    // 5. AREA TEKS & DATA GEOTAG (SISI KANAN PETA)
-    float textLeft = mapLeft + mapSize + (padding * 0.8f);
-    float textWidth = (left + cardWidth) - textLeft - (padding * 0.5f);
+    Paint hBg = new Paint(Paint.ANTI_ALIAS_FLAG);
+    hBg.setColor(Color.parseColor("#333333"));
+    hBg.setAlpha(230);
+    canvas.drawRoundRect(new RectF(hLeft, hTop, hLeft + hWidth, hTop + hHeight), 10, 10, hBg);
+    canvas.drawText(headerTxt, hLeft + padding, hTop + (hHeight * 0.7f), hTextPaint);
 
-    // Paint untuk Judul (Besar & Bold)
-    TextPaint titlePaint = new TextPaint();
-    titlePaint.setColor(Color.WHITE);
-    titlePaint.setAntiAlias(true);
-    titlePaint.setTextSize(w / 19f); 
-    titlePaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+    // 5. AREA TEKS (URUTAN: KECAMATAN, KABUPATEN, NEGARA)
+    float textLeft = mapLeft + mapSize + padding;
+    float textWidth = (left + cardWidth) - textLeft - padding;
 
-    // Paint untuk Detail (Normal)
-    TextPaint normalPaint = new TextPaint();
-    normalPaint.setColor(Color.WHITE);
-    normalPaint.setAntiAlias(true);
-    normalPaint.setTextSize(w / 36f); // Ukuran teks detail agar tidak bertumpuk
+    // Logika Pemecah Alamat (Sesuaikan index split jika urutan alamat berbeda)
+    String[] parts = addr.split(",");
+    String kec = (parts.length > 2) ? parts[2].trim() : "Kecamatan";
+    String kab = (parts.length > 3) ? parts[3].trim() : "Kabupaten";
+    String judulFix = kec + ", " + kab + ", Indonesia 🇮🇩";
 
-    // --- Menggambar Judul (Lokasi Utama) ---
-    String fullTitle = extractMainLocation(addr) + ", Jawa Timur, Indonesia 🇮🇩";
-    StaticLayout titleLayout = new StaticLayout(fullTitle, titlePaint, (int) textWidth, 
-                               Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+    // --- Paint Judul ---
+    TextPaint tpTitle = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    tpTitle.setColor(Color.WHITE);
+    tpTitle.setTextSize(fontSizeTitle);
+    tpTitle.setTypeface(Typeface.DEFAULT_BOLD);
+
+    // --- Paint Detail ---
+    TextPaint tpDetail = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    tpDetail.setColor(Color.WHITE);
+    tpDetail.setTextSize(fontSizeDetail);
 
     canvas.save();
-    canvas.translate(textLeft, top + (cardHeight * 0.12f));
-    titleLayout.draw(canvas);
+    canvas.translate(textLeft, top + padding + (fontSizeTitle * 0.8f));
+
+    // Gambar Judul
+    StaticLayout slTitle = new StaticLayout(judulFix, tpTitle, (int) textWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+    slTitle.draw(canvas);
+    canvas.translate(0, slTitle.getHeight() + 2);
+
+    // Gambar Alamat
+    StaticLayout slAddr = new StaticLayout(addr, tpDetail, (int) textWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0, false);
+    slAddr.draw(canvas);
+    canvas.translate(0, slAddr.getHeight() + 4);
+
+    // Gambar Lat/Long
+    canvas.drawText("Lat " + lat + "° Long " + lon + "°", 0, 0, tpDetail);
     
-    // Geser ke bawah setelah judul untuk menggambar alamat
-    canvas.translate(0, titleLayout.getHeight() + 5);
-    
-    // --- Menggambar Alamat Lengkap ---
-    StaticLayout addrLayout = new StaticLayout(addr, normalPaint, (int) textWidth, 
-                               Layout.Alignment.ALIGN_NORMAL, 1.1f, 0, false);
-    addrLayout.draw(canvas);
-    
-    // Geser ke bawah lagi setelah alamat untuk koordinat & waktu
-    canvas.translate(0, addrLayout.getHeight() + 8);
-    
-    // --- Menggambar Koordinat ---
-    canvas.drawText("Lat " + lat + "° Long " + lon + "°", 0, 0, normalPaint);
-    
-    // --- Menggambar Waktu ---
-    String waktuIndo = formatTanggalIndonesia(time);
-    canvas.drawText(waktuIndo, 0, normalPaint.getTextSize() * 1.4f, normalPaint);
-    
+    // Gambar Waktu
+    canvas.drawText(formatTanggalIndonesia(time), 0, fontSizeDetail * 1.4f, tpDetail);
+
     canvas.restore();
 }
 
