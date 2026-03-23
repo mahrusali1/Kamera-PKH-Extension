@@ -84,7 +84,7 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     float cardHeight = mapSize + (padding * 1.3f);
 
     float left = (w - cardWidth) / 2f;
-    float top = h - cardHeight - (25 * dp);
+    float top = h - cardHeight - (15 * dp);
 
     // === LOAD FONT (HANYA SEKALI) ===
     // === LOAD FONT AMAN (ANTI ERROR APP INVENTOR) ===
@@ -291,7 +291,7 @@ if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
 }
 
 // Jarak dari Title ke Alamat (12 dp agar renggang)
-y = titleY + layout.getHeight() + (12 * dp);
+y = titleY + layout.getHeight() + (6 * dp);
 
 canvas.save();
 canvas.translate(textX, y);
