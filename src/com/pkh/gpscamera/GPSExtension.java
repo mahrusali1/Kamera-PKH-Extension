@@ -71,7 +71,7 @@ public class GPSExtension extends AndroidNonvisibleComponent {
         }).start();
     }
 
-    private void drawByTemplate(Canvas canvas, String addr, String lat, String lon,
+    private void drawByTemplate(android.graphics.Canvas canvas, String addr, String lat, String lon,
                             String time, int w, int h) {
 
     float dp = w / 360f;
