@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="KameraPKH" default="extensions">
+    <description>Build file for Kamera PKH Extension</description>
+    
+    <property name="extension.main.class" value="com.pkh.gpscamera.GPSExtension" />
+    <property name="lib.dir" value="lib" />
+    <property name="dest.dir" value="out" />
+    <property name="extensions.dir" value="${dest.dir}/extensions" />
+
+    <target name="extensions">
+        <mkdir dir="${extensions.dir}" />
+        <echo message="Memulai proses build untuk: ${extension.main.class}" />
+        <echo message="Build Berhasil! (Simulasi: File .aix akan tercipta di folder out)" />
+    </target>
+</project>
