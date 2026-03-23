@@ -84,7 +84,7 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     float cardHeight = mapSize + (padding * 1.5f);
 
     float left = (w - cardWidth) / 2f;
-    float top = h - cardHeight - (20 * dp);
+    float top = h - cardHeight - (8 * dp);
 
     // === LOAD FONT (HANYA SEKALI) ===
     // === LOAD FONT AMAN (ANTI ERROR APP INVENTOR) ===
@@ -124,7 +124,7 @@ try {
     bg.setColor(Color.parseColor("#99000000"));
     canvas.drawRoundRect(
             new RectF(left, top, left + cardWidth, top + cardHeight),
-            12 * dp, 12 * dp, bg
+            10 * dp, 10 * dp, bg
     );
 // === HEADER ATAS (GPS MAP CAMERA) ===
 TextPaint topText = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -230,11 +230,11 @@ try {
 // === TITLE ===
 TextPaint title = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 title.setColor(Color.WHITE);
-title.setTextSize(13 * dp);
+title.setTextSize(14 * dp);
 title.setTypeface(fontMedium);
 
 // 🔥 TITLE JANGAN TERLALU TURUN
-float titleY = top + padding + (10 * dp);
+float titleY = top + padding + (6 * dp);
 canvas.drawText(extractMainLocation(addr) + ", Indonesia 🇮🇩", textX, titleY, title);
 
 // === BODY ===
