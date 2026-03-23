@@ -222,7 +222,7 @@ try {
 
     // === AREA TEXT ===
     float textX = mapRect.right + spacing;
-    float y = top + padding + (12 * dp);
+    float y = top + padding + (6 * dp);
 
  // HEADER (sebenarnya tidak dipakai lagi di dalam card)
 // jadi tidak perlu drawText di sini
@@ -230,21 +230,21 @@ try {
 // === TITLE ===
 TextPaint title = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 title.setColor(Color.WHITE);
-title.setTextSize(11 * dp);
+title.setTextSize(13 * dp);
 title.setTypeface(fontMedium);
 
 // 🔥 TITLE JANGAN TERLALU TURUN
-float titleY = top + padding + (18 * dp);
+float titleY = top + padding + (10 * dp);
 canvas.drawText(extractMainLocation(addr) + ", Indonesia 🇮🇩", textX, titleY, title);
 
 // === BODY ===
 TextPaint body = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 body.setColor(Color.WHITE);
-body.setTextSize(10 * dp);
+body.setTextSize(9 * dp);
 body.setTypeface(fontRegular);
 
 // 🔥 ADDRESS MULAI SETELAH TITLE (INI KUNCI)
-y = titleY + (12 * dp);
+y = titleY + (9 * dp);
 
 // SPLIT ADDRESS
 String[] parts = addr.split(",");
@@ -262,19 +262,19 @@ if (parts.length >= 4) {
 canvas.drawText(line1.trim(), textX, y, body);
 
 // BARIS 2
-y += 11 * dp;
+y += 9 * dp;
 canvas.drawText(line2.trim(), textX, y, body);
 
 // PLUS CODE
-y += 13 * dp;
+y += 10 * dp;
 canvas.drawText("3Q8V+JC8", textX, y, body);
 
 // LAT LONG
-y += 11 * dp;
+y += 10 * dp;
 canvas.drawText("Lat " + lat + " | Long " + lon, textX, y, body);
 
 // DATE
-y += 11 * dp;
+y += 9 * dp;
 canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
     }
 
