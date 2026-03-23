@@ -265,39 +265,47 @@ layout.draw(canvas);
 canvas.restore();
 
 // === BODY ===
+// === BODY (GABUNGAN ALAMAT) ===
 TextPaint body = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 body.setColor(Color.WHITE);
 body.setTextSize(9 * dp);
 body.setTypeface(fontRegular);
 
-// 🔥 ADDRESS MULAI SETELAH TITLE (INI KUNCI)
-y = titleY + layout.getHeight() + (6 * dp);
-
-// SPLIT ADDRESS
+// Menggabungkan semua bagian alamat menjadi satu teks panjang
 String[] parts = addr.split(",");
+StringBuilder fullAddrBuilder = new StringBuilder();
+for (int i = 0; i < parts.length; i++) {
+    fullAddrBuilder.append(parts[i].trim());
+    if (i < parts.length - 1) fullAddrBuilder.append(", ");
+}
+String fullAddress = fullAddrBuilder.toString();
 
-String line1 = parts.length > 0 ? parts[0] : "";
-String line2 = parts.length > 1 ? parts[1] + ", " +
-               (parts.length > 2 ? parts[2] : "") : "";
+// Menggunakan StaticLayout agar alamat otomatis turun baris jika kepanjangan
+StaticLayout addrLayout;
+int addrWidth = (int)(cardWidth - mapSize - 40 * dp);
 
-// BARIS 1
-canvas.drawText(line1.trim(), textX, y, body);
+if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+    addrLayout = StaticLayout.Builder.obtain(fullAddress, 0, fullAddress.length(), body, addrWidth).build();
+} else {
+    addrLayout = new StaticLayout(fullAddress, body, addrWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+}
 
-// BARIS 2
-y += 10 * dp;
-canvas.drawText(line2.trim(), textX, y, body);
+// Jarak dari Title ke Alamat (12 dp agar renggang)
+y = titleY + layout.getHeight() + (12 * dp);
 
+canvas.save();
+canvas.translate(textX, y);
+addrLayout.draw(canvas);
+canvas.restore();
 
-
-// LAT LONG
-y += 10 * dp;
+// Posisi Lat Long dihitung dari tinggi alamat yang baru
+y += addrLayout.getHeight() + (8 * dp);
 canvas.drawText("Lat " + lat + " | Long " + lon, textX, y, body);
 
-// DATE
-y += 10 * dp;
+// Posisi Tanggal
+y += 11 * dp;
 canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
-    }
-
+            
    private String formatTanggalIndonesia(String input) {
     try {
         java.text.SimpleDateFormat inputFormat = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
