@@ -14,7 +14,7 @@ import java.util.Scanner;
 
 @DesignerComponent(
         version = 4,
-        description = "GPS Map Camera PKH - FINAL BUILD SUCCESS",
+        description = "GPS Map Camera PKH - FINAL STABLE BUILD",
         category = ComponentCategory.EXTENSION,
         nonVisible = true,
         iconName = "images/extension.png"
@@ -125,6 +125,17 @@ public class GPSExtension extends AndroidNonvisibleComponent {
         canvas.restore();
 
         float coordY = top + padding * 4.5f + sl.getHeight();
+        
+        // Ikon Pin
+        try {
+            Bitmap pinBmp = BitmapFactory.decodeStream(form.openAsset(pinName));
+            if (pinBmp != null) {
+                float pinSize = w / 32f;
+                canvas.drawBitmap(pinBmp, null, new RectF(textLeft, coordY - pinSize, textLeft + pinSize, coordY), new Paint(Paint.ANTI_ALIAS_FLAG));
+                textLeft += pinSize + (padding * 0.3f);
+            }
+        } catch (Exception ignored) {}
+
         tp.setColor(Color.parseColor("#009688"));
         tp.setTextSize(w / 36f);
         canvas.drawText("Lat " + lat + " | Long " + lon, textLeft, coordY, tp);
@@ -136,37 +147,4 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     private String formatTanggalIndonesia(String input) {
         try {
             java.text.SimpleDateFormat inputFormat = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
-            java.util.Date date = inputFormat.parse(input);
-            String[] hari = {"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"};
-            String[] bulan = {"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"};
-            java.util.Calendar cal = java.util.Calendar.getInstance();
-            cal.setTime(date);
-            return hari[cal.get(java.util.Calendar.DAY_OF_WEEK) - 1] + ", " + cal.get(java.util.Calendar.DAY_OF_MONTH) + " " + bulan[cal.get(java.util.Calendar.MONTH)] + " " + cal.get(java.util.Calendar.YEAR) + String.format(" %02d:%02d WIB", cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE));
-        } catch (Exception e) { return input; }
-    }
-
-    private String extractMainLocation(String addr) {
-        String[] parts = addr.split(",");
-        for (String p : parts) {
-            if (p.toLowerCase().contains("kecamatan") || p.toLowerCase().contains("kec")) return p.trim();
-        }
-        return parts.length > 0 ? parts[0] : "Lokasi";
-    }
-
-    private String fetchAddress(String lat, String lon) {
-        try {
-            URL url = new URL("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("User-Agent", "GPSCameraPKH");
-            Scanner scanner = new Scanner(conn.getInputStream()).useDelimiter("\\A");
-            String result = scanner.hasNext() ? scanner.next() : "";
-            if (result.contains("display_name")) {
-                int start = result.indexOf("display_name") + 15;
-                return result.substring(start, result.indexOf("\"", start)).replace("\\\"", "");
-            }
-        } catch (Exception ignored) {}
-        return "Alamat tidak ditemukan";
-    }
-
-    @SimpleEvent(description = "Berhasil")
-    public void On
+            java.util.Date date = inputFormat.parse(input
