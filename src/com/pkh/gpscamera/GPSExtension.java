@@ -81,7 +81,7 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     float spacing = 10 * dp;
 
     float cardWidth = w * 0.94f;
-    float cardHeight = mapSize + (padding * 1.5f);
+    float cardHeight = mapSize + (padding * 1.3f);
 
     float left = (w - cardWidth) / 2f;
     float top = h - cardHeight - (8 * dp);
@@ -271,7 +271,7 @@ body.setTextSize(9 * dp);
 body.setTypeface(fontRegular);
 
 // 🔥 ADDRESS MULAI SETELAH TITLE (INI KUNCI)
-y = titleY + layout.getHeight() + (6 * dp);
+y = titleY + layout.getHeight() + (2 * dp);
 
 // SPLIT ADDRESS
 String[] parts = addr.split(",");
@@ -284,17 +284,17 @@ String line2 = parts.length > 1 ? parts[1] + ", " +
 canvas.drawText(line1.trim(), textX, y, body);
 
 // BARIS 2
-y += 9 * dp;
+y += 7 * dp;
 canvas.drawText(line2.trim(), textX, y, body);
 
 
 
 // LAT LONG
-y += 10 * dp;
+y += 7 * dp;
 canvas.drawText("Lat " + lat + " | Long " + lon, textX, y, body);
 
 // DATE
-y += 9 * dp;
+y += 7 * dp;
 canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
     }
 
@@ -339,9 +339,10 @@ canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
         org.json.JSONObject json = new org.json.JSONObject(result);
         org.json.JSONObject address = json.getJSONObject("address");
 
-       String desa = address.optString("village",
-             address.optString("hamlet",
-             address.optString("suburb", "")));
+      String desa = address.optString("hamlet",
+             address.optString("village",
+             address.optString("suburb",
+             address.optString("neighbourhood", ""))));
 
 String kecamatan = address.optString("subdistrict",
                    address.optString("town", ""));
@@ -383,9 +384,9 @@ private String getWilayahIndonesia(String addr) {
             kabupaten = kecamatan;
         }
 
-        return desa + ", Kecamatan " + kecamatan +
-               ", Kabupaten " + kabupaten +
-               ", " + provinsi + ", Indonesia 🇮🇩";
+       return desa +
+       ", Kab. " + kabupaten +
+       ", " + provinsi + ", Indonesia 🇮🇩";
 
     } catch (Exception e) {
         return "Indonesia 🇮🇩";
