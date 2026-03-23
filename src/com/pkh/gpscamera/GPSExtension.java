@@ -77,7 +77,7 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     float dp = w / 360f;
 
     float padding = 12 * dp;
-    float mapSize = 100 * dp;
+    float mapSize = 75 * dp;
     float spacing = 10 * dp;
 
     float cardWidth = w * 0.94f;
@@ -85,6 +85,10 @@ public class GPSExtension extends AndroidNonvisibleComponent {
 
     float left = (w - cardWidth) / 2f;
     float top = h - cardHeight - (20 * dp);
+
+    // === LOAD FONT (HANYA SEKALI) ===
+    Typeface fontMedium = Typeface.createFromAsset(form.getAssets(), "sfdisplay_medium.TTF");
+    Typeface fontRegular = Typeface.createFromAsset(form.getAssets(), "sfuitext_regular.otf");
 
     // === BACKGROUND ===
     Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -94,7 +98,7 @@ public class GPSExtension extends AndroidNonvisibleComponent {
             25 * dp, 25 * dp, bg
     );
 
-    // === MAP ===
+    // === MAP (ROUNDED) ===
     RectF mapRect = new RectF(
             left + padding,
             top + padding,
@@ -105,65 +109,85 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     try {
         URL url = new URL("https://static-maps.yandex.ru/1.x/?ll=" + lon + "," + lat + "&z=17&l=sat&size=300,300");
         Bitmap map = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-        canvas.drawBitmap(map, null, mapRect, null);
+
+        if (map != null) {
+            Path path = new Path();
+            path.addRoundRect(mapRect, 12 * dp, 12 * dp, Path.Direction.CW);
+
+            canvas.save();
+            canvas.clipPath(path);
+            canvas.drawBitmap(map, null, mapRect, null);
+            canvas.restore();
+        }
     } catch (Exception e) {}
 
     // === GOOGLE TEXT ===
     Paint google = new Paint(Paint.ANTI_ALIAS_FLAG);
     google.setColor(Color.WHITE);
-    google.setTextSize(14 * dp);
+    google.setTextSize(12 * dp);
     google.setFakeBoldText(true);
+    google.setShadowLayer(3, 1, 1, Color.BLACK);
     canvas.drawText("Google", mapRect.left + 10 * dp, mapRect.bottom - 10 * dp, google);
 
-    // === TEXT AREA ===
+    // === AREA TEXT ===
     float textX = mapRect.right + spacing;
-    float y = top + padding + (15 * dp);
+    float y = top + padding + (12 * dp);
 
-    // Header kecil
+    // HEADER
     TextPaint header = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     header.setColor(Color.WHITE);
     header.setAlpha(160);
-    header.setTextSize(12 * dp);
+    header.setTextSize(9 * dp);
+    header.setTypeface(fontRegular);
     canvas.drawText("GPS Map Camera", textX, y, header);
 
-    // TITLE BESAR
+    // TITLE
     TextPaint title = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     title.setColor(Color.WHITE);
-    title.setTextSize(18 * dp);
-    title.setTypeface(Typeface.DEFAULT_BOLD);
+    title.setTextSize(14 * dp);
+    title.setTypeface(fontMedium);
 
-    y += 20 * dp;
+    y += 14 * dp;
     canvas.drawText(extractMainLocation(addr) + ", Indonesia 🇮🇩", textX, y, title);
 
-    // ADDRESS
+    // BODY
     TextPaint body = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     body.setColor(Color.WHITE);
-    body.setTextSize(12 * dp);
+    body.setTextSize(10 * dp);
+    body.setTypeface(fontRegular);
 
     y += 10 * dp;
 
-    StaticLayout sl = StaticLayout.Builder
-            .obtain(addr, 0, addr.length(), body, (int)(cardWidth - mapSize - 50))
-            .build();
+    // SPLIT ADDRESS JADI 2 BARIS
+    String[] parts = addr.split(",");
+    String line1 = "";
+    String line2 = "";
 
-    canvas.save();
-    canvas.translate(textX, y);
-    sl.draw(canvas);
-    canvas.restore();
+    if (parts.length >= 4) {
+        line1 = parts[0] + "," + parts[1] + "," + parts[2];
+        line2 = addr.replace(line1 + ",", "");
+    } else {
+        line1 = addr;
+    }
 
-    y += sl.getHeight() + 10 * dp;
+    canvas.drawText(line1.trim(), textX, y, body);
 
-    // PLUS CODE (dummy dulu)
+    y += 12 * dp;
+    canvas.drawText(line2.trim(), textX, y, body);
+
+    y += 12 * dp;
+
+    // PLUS CODE (sementara statis)
     canvas.drawText("3Q8V+JC8", textX, y, body);
 
-    y += 15 * dp;
+    y += 12 * dp;
 
     // LAT LONG
     canvas.drawText("Lat " + lat + " | Long " + lon, textX, y, body);
 
-    y += 15 * dp;
+    y += 12 * dp;
 
-    // DATE (FORMAT MIRIP ASLI)
+    // DATE
     canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
 }
 
