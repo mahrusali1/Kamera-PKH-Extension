@@ -131,21 +131,22 @@ TextPaint topText = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 topText.setColor(Color.WHITE);
 topText.setTextSize(11 * dp);
 topText.setTypeface(Typeface.DEFAULT_BOLD);
-
+topText.setShadowLayer(4, 0, 0, Color.BLACK);
+            
 float margin = 16 * dp;
 float textWidth = topText.measureText("GPS Map Camera");
 
 float xText = w - textWidth - margin;
-float yText = top - (8 * dp);
+float yText = top + (2 * dp);
 
             // 🔥 ICON DULU
 try {
     Bitmap icon = BitmapFactory.decodeStream(form.openAsset("camera_icon.png"));
     if (icon != null) {
-        float iconSize = 14 * dp;
+        float iconSize = 18 * dp;
 
         float iconX = xText - iconSize - (6 * dp);
-        float iconY = yText - iconSize + (4 * dp);
+        float iconY = yText - iconSize + (6 * dp);
 
         canvas.drawBitmap(icon, null,
                 new RectF(iconX, iconY, iconX + iconSize, iconY + iconSize),
@@ -223,63 +224,59 @@ try {
     float textX = mapRect.right + spacing;
     float y = top + padding + (12 * dp);
 
-    // HEADER
-    TextPaint header = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    header.setColor(Color.WHITE);
-    header.setAlpha(160);
-    header.setTextSize(9 * dp);
-    header.setTypeface(fontRegular);
-   
+ // HEADER (sebenarnya tidak dipakai lagi di dalam card)
+// jadi tidak perlu drawText di sini
 
-    // TITLE
-    TextPaint title = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    title.setColor(Color.WHITE);
-    title.setTextSize(12 * dp);
-    title.setTypeface(fontMedium);
+// === TITLE ===
+TextPaint title = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+title.setColor(Color.WHITE);
+title.setTextSize(11 * dp);
+title.setTypeface(fontMedium);
 
-    y += 12 * dp;
-    canvas.drawText(extractMainLocation(addr) + ", Indonesia 🇮🇩", textX, y, title);
+// 🔥 TITLE JANGAN TERLALU TURUN
+float titleY = top + padding + (18 * dp);
+canvas.drawText(extractMainLocation(addr) + ", Indonesia 🇮🇩", textX, titleY, title);
 
-    // BODY
-    TextPaint body = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    body.setColor(Color.WHITE);
-    body.setTextSize(10 * dp);
-    body.setTypeface(fontRegular);
+// === BODY ===
+TextPaint body = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+body.setColor(Color.WHITE);
+body.setTextSize(10 * dp);
+body.setTypeface(fontRegular);
 
-    y += 7 * dp;
+// 🔥 ADDRESS MULAI SETELAH TITLE (INI KUNCI)
+y = titleY + (12 * dp);
 
-    // SPLIT ADDRESS JADI 2 BARIS
-    String[] parts = addr.split(",");
-    String line1 = "";
-    String line2 = "";
+// SPLIT ADDRESS
+String[] parts = addr.split(",");
+String line1 = "";
+String line2 = "";
 
-    if (parts.length >= 4) {
-        line1 = parts[0] + "," + parts[1] + "," + parts[2];
-        line2 = addr.replace(line1 + ",", "");
-    } else {
-        line1 = addr;
-    }
-
-    canvas.drawText(line1.trim(), textX, y, body);
-
-    y += 7 * dp;
-    canvas.drawText(line2.trim(), textX, y, body);
-
-    y += 9 * dp;
-
-    // PLUS CODE (sementara statis)
-    canvas.drawText("3Q8V+JC8", textX, y, body);
-
-    y += 9 * dp;
-
-    // LAT LONG
-    canvas.drawText("Lat " + lat + " | Long " + lon, textX, y, body);
-
-    y += 9 * dp;
-
-    // DATE
-    canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
+if (parts.length >= 4) {
+    line1 = parts[0] + "," + parts[1] + "," + parts[2];
+    line2 = addr.replace(line1 + ",", "");
+} else {
+    line1 = addr;
 }
+
+// BARIS 1
+canvas.drawText(line1.trim(), textX, y, body);
+
+// BARIS 2
+y += 11 * dp;
+canvas.drawText(line2.trim(), textX, y, body);
+
+// PLUS CODE
+y += 13 * dp;
+canvas.drawText("3Q8V+JC8", textX, y, body);
+
+// LAT LONG
+y += 11 * dp;
+canvas.drawText("Lat " + lat + " | Long " + lon, textX, y, body);
+
+// DATE
+y += 11 * dp;
+canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
+    }
 
    private String formatTanggalIndonesia(String input) {
     try {
