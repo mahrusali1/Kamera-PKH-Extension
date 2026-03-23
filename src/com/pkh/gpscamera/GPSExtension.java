@@ -60,10 +60,20 @@ public class GPSExtension extends AndroidNonvisibleComponent {
 
                 final String path = outFile.getAbsolutePath();
 
-                form.runOnUiThread(() -> OnAddressFound(finalAddress, path));
+                form.runOnUiThread(new Runnable() {
+    @Override
+    public void run() {
+        OnAddressFound(finalAddress, path);
+    }
+});
 
             } catch (Exception e) {
-                form.runOnUiThread(() -> OnError(e.getMessage()));
+                form.runOnUiThread(new Runnable() {
+    @Override
+    public void run() {
+        OnError(e.getMessage());
+    }
+});
             }
         }).start();
     }
