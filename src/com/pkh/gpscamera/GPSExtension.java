@@ -39,7 +39,7 @@ public class GPSExtension extends AndroidNonvisibleComponent {
                     Bitmap mutable = original.copy(Bitmap.Config.ARGB_8888, true);
                     android.graphics.Canvas canvas = new android.graphics.Canvas(mutable);
 
-                    // 3. Draw Berdasarkan Template Pilihan
+                    // 3. Draw Berdasarkan Template Pilihann
                     drawByTemplate(canvas, templateType, finalAddress, inputLat, inputLong, inputDateTime, mutable.getWidth(), mutable.getHeight());
 
                     // 4. Save Final Image
