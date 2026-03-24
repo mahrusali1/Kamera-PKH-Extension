@@ -173,10 +173,13 @@ try {
 }
 
 // === TEXT HEADER ===
-float headerTextX = iconX + iconSize + (6 * dp);
-float headerTextY = hTop + (hHeight * 0.7f);
+float headerTextX = headerIconX + iconSize + (6 * dp);
 
-canvas.drawText(headerTxt, headerTextX, headerTextY, hText);;
+// 🔥 CENTER VERTICAL PERFECT
+Paint.FontMetrics fm = hText.getFontMetrics();
+float headerTextY = hTop + (hHeight / 2) - ((fm.ascent + fm.descent) / 2);
+
+canvas.drawText(headerTxt, headerTextX, headerTextY, hText);
 
             
            
