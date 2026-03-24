@@ -282,7 +282,7 @@ Bitmap map = BitmapFactory.decodeStream(conn.getInputStream());
         try {
             Bitmap pin = BitmapFactory.decodeStream(form.openAsset("map_pin.png"));
             if (pin != null) {
-                float pinSize = mapSize * 0.35f;
+                float pinSize = mapSize * 0.20f;
 
                 float cx = mapRect.centerX();
                 float cy = mapRect.centerY();
