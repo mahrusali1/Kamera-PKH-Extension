@@ -165,7 +165,7 @@ try {
     Bitmap icon = BitmapFactory.decodeStream(form.openAsset("camera_icon.png"));
     if (icon != null) {
         canvas.drawBitmap(icon, null,
-                new RectF(iconX, iconY, iconX + iconSize, iconY + iconSize),
+                new RectF(headerIconX, headerIconY, headerIconX + iconSize, headerIconY + iconSize),
                 null);
     }
 } catch (Exception e) {
