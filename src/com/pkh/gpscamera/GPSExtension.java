@@ -158,8 +158,8 @@ canvas.drawRoundRect(
 
 // === ICON CAMERA ===
 float iconSize = 14 * dp;
-float iconX = hLeft + hPadding;
-float iconY = hTop + (hHeight - iconSize) / 2;
+float headerIconX = hLeft + hPadding;
+float headerIconY = hTop + (hHeight - iconSize) / 2;
 
 try {
     Bitmap icon = BitmapFactory.decodeStream(form.openAsset("camera_icon.png"));
@@ -173,10 +173,10 @@ try {
 }
 
 // === TEXT HEADER ===
-float textX = iconX + iconSize + (6 * dp);
-float textY = hTop + (hHeight * 0.7f);
+float headerTextX = iconX + iconSize + (6 * dp);
+float headerTextY = hTop + (hHeight * 0.7f);
 
-canvas.drawText(headerTxt, textX, textY, hText);
+canvas.drawText(headerTxt, headerTextX, headerTextY, hText);;
 
             
            
