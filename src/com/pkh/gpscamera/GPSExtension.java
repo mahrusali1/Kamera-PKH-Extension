@@ -126,28 +126,44 @@ try {
             new RectF(left, top, left + cardWidth, top + cardHeight),
             10 * dp, 10 * dp, bg
     );
-// === HEADER ATAS (GPS MAP CAMERA) ===
-TextPaint topText = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-topText.setColor(Color.WHITE);
-topText.setTextSize(11 * dp);
-topText.setTypeface(Typeface.DEFAULT_BOLD);
-topText.setShadowLayer(4, 0, 0, Color.BLACK);
-            
-float margin = 16 * dp;
-float textWidth = topText.measureText("GPS Map Camera");
 
-float xText = w - textWidth - margin;
-float yText = top + (2 * dp);
+            // ================= HEADER FLOATING (TERPISAH) =================
+String headerTxt = "GPS Map Camera";
 
-            // 🔥 ICON DULU
+// TEXT PAINT
+TextPaint hText = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+hText.setColor(Color.WHITE);
+hText.setTextSize(11 * dp);
+hText.setTypeface(Typeface.DEFAULT_BOLD);
+hText.setShadowLayer(3, 0, 0, Color.BLACK);
+
+// HITUNG UKURAN
+float textW = hText.measureText(headerTxt);
+float hPadding = 10 * dp;
+float hHeight = 20 * dp;
+float hWidth = textW + (hPadding * 2) + (20 * dp); // tambah ruang untuk icon
+
+// POSISI (NEMPEL DI ATAS CARD, RATA KANAN)
+float hLeft = (left + cardWidth) - hWidth - (8 * dp);
+float hTop = top - hHeight;
+
+// BACKGROUND HEADER
+Paint hBg = new Paint(Paint.ANTI_ALIAS_FLAG);
+hBg.setColor(Color.parseColor("#AA2C2C2C"));
+canvas.drawRoundRect(
+        new RectF(hLeft, hTop, hLeft + hWidth, hTop + hHeight),
+        12 * dp, 12 * dp,
+        hBg
+);
+
+// === ICON CAMERA ===
+float iconSize = 14 * dp;
+float iconX = hLeft + hPadding;
+float iconY = hTop + (hHeight - iconSize) / 2;
+
 try {
     Bitmap icon = BitmapFactory.decodeStream(form.openAsset("camera_icon.png"));
     if (icon != null) {
-        float iconSize = 18 * dp;
-
-        float iconX = xText - iconSize - (6 * dp);
-        float iconY = yText - iconSize + (6 * dp);
-
         canvas.drawBitmap(icon, null,
                 new RectF(iconX, iconY, iconX + iconSize, iconY + iconSize),
                 null);
@@ -156,9 +172,14 @@ try {
     e.printStackTrace();
 }
 
-            
+// === TEXT HEADER ===
+float textX = iconX + iconSize + (6 * dp);
+float textY = hTop + (hHeight * 0.7f);
+
+canvas.drawText(headerTxt, textX, textY, hText);
 
             
+           
     // === MAP (ROUNDED) ===
     
 RectF mapRect = new RectF(
