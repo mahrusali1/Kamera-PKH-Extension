@@ -447,7 +447,7 @@ String kecamatan = address.optString("subdistrict",
 String kabupaten = address.optString("county",
                   address.optString("city", ""));
 
-String provinsi = address.optString("state", "");
+
    // 🔥 PROVINSI DIGANTI FIX
         String provinsi = "Jawa Timur";
 // 🔥 TARUH DI SINI (SEBELUM RETURN)
