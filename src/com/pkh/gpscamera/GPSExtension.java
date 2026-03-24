@@ -123,7 +123,7 @@ try {
     Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
     bg.setColor(Color.parseColor("#99000000"));
    Path cardPath = new Path();
-float r = 10 * dp;
+float r = 9 * dp;
 
 // MULAI dari kiri atas (setelah radius)
 cardPath.moveTo(left + r, top);
@@ -187,7 +187,7 @@ Paint hBg = new Paint(Paint.ANTI_ALIAS_FLAG);
 hBg.setColor(Color.parseColor("#99000000"));
 Path headerPath = new Path();
 
-float radius = 12 * dp;
+float radius = 8 * dp;
 
 // Mulai dari kiri bawah
 headerPath.moveTo(hLeft, hTop + hHeight);
@@ -430,33 +430,66 @@ canvas.drawText(formatTanggalIndonesia(time) + " GMT +07:00", textX, y, body);
         conn.setRequestProperty("User-Agent", "GPSCameraPKH");
         conn.setConnectTimeout(5000);
         conn.setReadTimeout(5000);
-            
+
         Scanner scanner = new Scanner(conn.getInputStream()).useDelimiter("\\A");
         String result = scanner.hasNext() ? scanner.next() : "";
 
-        // 🔥 PARSE JSON
+        // PARSE JSON
         org.json.JSONObject json = new org.json.JSONObject(result);
         org.json.JSONObject address = json.getJSONObject("address");
 
-      String desa = address.optString("hamlet",
-             address.optString("village",
-             address.optString("suburb",
-             address.optString("neighbourhood", ""))));
+        // ===== AMBIL SEMUA DATA YANG MUNGKIN ADA =====
+        String road = address.optString("road", "");
+        String house = address.optString("house_number", "");
+        String building = address.optString("building", "");
+        String amenity = address.optString("amenity", "");
 
-String kecamatan = address.optString("subdistrict",
-                   address.optString("town", ""));
+        String desa = address.optString("hamlet",
+                address.optString("village",
+                address.optString("suburb",
+                address.optString("neighbourhood", ""))));
 
-String kabupaten = address.optString("county",
-                  address.optString("city", ""));
+        String kecamatan = address.optString("subdistrict",
+                address.optString("town", ""));
 
-String provinsi = address.optString("state", "");
+        String kabupaten = address.optString("county",
+                address.optString("city", ""));
 
-// 🔥 TARUH DI SINI (SEBELUM RETURN)
-if (kecamatan.equals("") || kecamatan.equals(kabupaten)) {
-    kecamatan = kabupaten;
-}
+        String provinsi = address.optString("state", "");
+        String kodepos = address.optString("postcode", "");
+        String negara = address.optString("country", "");
 
-return desa + "," + kecamatan + "," + kabupaten + "," + provinsi;
+        // ===== PERBAIKAN DATA =====
+        if (kecamatan.equals("") || kecamatan.equals(kabupaten)) {
+            kecamatan = kabupaten;
+        }
+
+        // ===== SUSUN FORMAT ALAMAT =====
+        StringBuilder hasil = new StringBuilder();
+
+        if (!amenity.equals("")) hasil.append(amenity).append("\n");
+        if (!building.equals("")) hasil.append(building).append("\n");
+
+        if (!road.equals("")) {
+            hasil.append(road);
+            if (!house.equals("")) hasil.append(" No. ").append(house);
+            hasil.append("\n");
+        }
+
+        if (!desa.equals("")) hasil.append(desa).append("\n");
+
+        if (!kecamatan.equals("") || !kabupaten.equals("")) {
+            hasil.append("Kec. ").append(kecamatan);
+            if (!kabupaten.equals("")) hasil.append(", Kab. ").append(kabupaten);
+            hasil.append("\n");
+        }
+
+        if (!provinsi.equals("")) hasil.append(provinsi).append("\n");
+        if (!kodepos.equals("")) hasil.append("Kode Pos ").append(kodepos).append("\n");
+        if (!negara.equals("")) hasil.append(negara);
+
+        // ===== RETURN FINAL =====
+        return hasil.toString();
 
     } catch (Exception e) {
         return "Lokasi tidak ditemukan";
