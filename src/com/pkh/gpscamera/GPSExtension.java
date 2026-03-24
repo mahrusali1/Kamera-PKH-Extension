@@ -122,10 +122,45 @@ try {
     // === BACKGROUND ===
     Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
     bg.setColor(Color.parseColor("#99000000"));
-    canvas.drawRoundRect(
-            new RectF(left, top, left + cardWidth, top + cardHeight),
-            10 * dp, 10 * dp, bg
-    );
+   Path cardPath = new Path();
+float r = 10 * dp;
+
+// MULAI dari kiri atas (setelah radius)
+cardPath.moveTo(left + r, top);
+
+// ATAS ke kanan (tanpa lengkung di kanan atas)
+cardPath.lineTo(left + cardWidth, top);
+
+// TURUN kanan
+cardPath.lineTo(left + cardWidth, top + cardHeight - r);
+
+// LENGKUNG kanan bawah
+cardPath.quadTo(
+        left + cardWidth, top + cardHeight,
+        left + cardWidth - r, top + cardHeight
+);
+
+// BAWAH ke kiri
+cardPath.lineTo(left + r, top + cardHeight);
+
+// LENGKUNG kiri bawah
+cardPath.quadTo(
+        left, top + cardHeight,
+        left, top + cardHeight - r
+);
+
+// NAIK kiri
+cardPath.lineTo(left, top + r);
+
+// LENGKUNG kiri atas
+cardPath.quadTo(
+        left, top,
+        left + r, top
+);
+
+cardPath.close();
+
+canvas.drawPath(cardPath, bg);
 
             // ================= HEADER FLOATING (TERPISAH) =================
 String headerTxt = "GPS Map Camera";
@@ -144,17 +179,49 @@ float hHeight = 20 * dp;
 float hWidth = textW + (hPadding * 2) + (20 * dp); // tambah ruang untuk icon
 
 // POSISI (NEMPEL DI ATAS CARD, RATA KANAN)
-float hLeft = (left + cardWidth) - hWidth - (8 * dp);
+float hLeft = (left + cardWidth) - hWidth;
 float hTop = top - hHeight;
 
 // BACKGROUND HEADER
 Paint hBg = new Paint(Paint.ANTI_ALIAS_FLAG);
-hBg.setColor(Color.parseColor("#AA2C2C2C"));
-canvas.drawRoundRect(
-        new RectF(hLeft, hTop, hLeft + hWidth, hTop + hHeight),
-        12 * dp, 12 * dp,
-        hBg
+hBg.setColor(Color.parseColor("#99000000"));
+Path headerPath = new Path();
+
+float radius = 12 * dp;
+
+// Mulai dari kiri bawah
+headerPath.moveTo(hLeft, hTop + hHeight);
+
+// Garis bawah ke kanan (FLAT)
+headerPath.lineTo(hLeft + hWidth, hTop + hHeight);
+
+// Naik ke kanan atas (sebelum lengkung)
+headerPath.lineTo(hLeft + hWidth, hTop + radius);
+
+// Lengkung kanan atas
+headerPath.quadTo(
+        hLeft + hWidth, hTop,
+        hLeft + hWidth - radius, hTop
 );
+
+// Garis atas ke kiri
+headerPath.lineTo(hLeft + radius, hTop);
+
+// Lengkung kiri atas
+headerPath.quadTo(
+        hLeft, hTop,
+        hLeft, hTop + radius
+);
+
+// Turun ke kiri bawah (FLAT)
+headerPath.lineTo(hLeft, hTop + hHeight);
+
+// Tutup path
+headerPath.close();
+
+// DRAW
+canvas.drawPath(headerPath, hBg);
+            
 
 // === ICON CAMERA ===
 float iconSize = 14 * dp;
