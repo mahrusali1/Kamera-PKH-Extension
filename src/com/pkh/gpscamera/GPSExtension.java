@@ -13,20 +13,21 @@ import java.net.URL;
 import java.util.Scanner;
 
 @DesignerComponent(
-        version = 4,
-        description = "GPS Map Camera PKH - FINAL STABLE BUILD",
+        version = 5,
+        description = "GPS Map Camera PKH - STABLE BUILD (ASD Storage Support)",
         category = ComponentCategory.EXTENSION,
         nonVisible = true,
         iconName = "images/extension.png"
 )
 @SimpleObject(external = true)
-@UsesPermissions(permissionNames = "android.permission.INTERNET, android.permission.WRITE_EXTERNAL_STORAGE")
+@UsesPermissions(permissionNames = "android.permission.INTERNET, android.permission.WRITE_EXTERNAL_STORAGE, android.permission.READ_EXTERNAL_STORAGE")
 public class GPSExtension extends AndroidNonvisibleComponent {
-// Tambahkan baris ini agar variabel container bisa diakses di seluruh class
+
     private ComponentContainer container;
-   public GPSExtension(ComponentContainer container) {
+
+    public GPSExtension(ComponentContainer container) {
         super(container.$form());
-        this.container = container; // Simpan container ke properti class
+        this.container = container;
     }
 
     @SimpleFunction(description = "Generate Watermark GPS Camera")
@@ -37,41 +38,55 @@ public class GPSExtension extends AndroidNonvisibleComponent {
             @Override
             public void run() {
                 try {
+                    // 1. Ambil Alamat dari Koordinat
                     final String finalAddress = fetchAddress(inputLat, inputLong);
+
+                    // 2. Load Gambar Asli
                     BitmapFactory.Options options = new BitmapFactory.Options();
                     options.inMutable = true;
                     Bitmap original = BitmapFactory.decodeFile(imagePath, options);
-                    if (original == null) throw new Exception("Foto tidak ditemukan");
+                    if (original == null) throw new Exception("Foto tidak ditemukan di path: " + imagePath);
 
+                    // 3. Buat Copy Bitmap untuk diedit
                     Bitmap bitmap = original.copy(Bitmap.Config.ARGB_8888, true);
                     original.recycle(); 
 
+                    // 4. Proses Gambar (Watermarking)
                     android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
-
                     drawByTemplate(canvas, finalAddress, inputLat, inputLong, inputDateTime,
                             bitmap.getWidth(), bitmap.getHeight());
 
-                    // --- PERBAIKAN DI SINI ---
-                    // Gunakan form.$context() karena form sudah tersedia dari parent class
+                    // 5. PENYIMPANAN (Perbaikan untuk APK: Menggunakan ASD)
                     android.content.Context context = form.$context();
-                    java.io.File internalDir = context.getFilesDir(); 
                     
-                    if (!internalDir.exists()) internalDir.mkdirs();
+                    // Simpan ke /storage/emulated/0/Android/data/com.pkh.gpscamera/files/
+                    // Folder ini bisa dibaca oleh TaifunFile di APK tanpa drama permission
+                    java.io.File storageDir = context.getExternalFilesDir(null); 
+                    
+                    if (storageDir == null) {
+                        storageDir = context.getFilesDir(); // Fallback ke internal jika SD Card error
+                    }
 
-                    java.io.File outFile = new java.io.File(internalDir, fileName);
+                    if (!storageDir.exists()) storageDir.mkdirs();
+
+                    java.io.File outFile = new java.io.File(storageDir, fileName);
                     java.io.FileOutputStream out = new java.io.FileOutputStream(outFile);
+                    
+                    // Simpan dengan kualitas tinggi
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out);
                     out.close();
                     
+                    // Bersihkan memori bitmap
                     bitmap.recycle(); 
 
                     final String savedPath = outFile.getAbsolutePath();
-                    // -------------------------
 
+                    // 6. Kirim hasil kembali ke App Inventor Thread
                     form.runOnUiThread(new Runnable() {
                         @Override
                         public void run() { OnAddressFound(finalAddress, savedPath); }
                     });
+
                 } catch (final Exception e) {
                     final String err = e.getMessage();
                     form.runOnUiThread(new Runnable() {
@@ -84,7 +99,7 @@ public class GPSExtension extends AndroidNonvisibleComponent {
     }
 
     private void drawByTemplate(android.graphics.Canvas canvas, String addr, String lat, String lon,
-                            String time, int w, int h) {
+                               String time, int w, int h) {
 
         float dp = w / 360f;
         float padding = 12 * dp;
