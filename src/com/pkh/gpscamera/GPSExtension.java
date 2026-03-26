@@ -22,9 +22,11 @@ import java.util.Scanner;
 @SimpleObject(external = true)
 @UsesPermissions(permissionNames = "android.permission.INTERNET, android.permission.WRITE_EXTERNAL_STORAGE")
 public class GPSExtension extends AndroidNonvisibleComponent {
-
-    public GPSExtension(ComponentContainer container) {
+// Tambahkan baris ini agar variabel container bisa diakses di seluruh class
+    private ComponentContainer container;
+   public GPSExtension(ComponentContainer container) {
         super(container.$form());
+        this.container = container; // Simpan container ke properti class
     }
 
     @SimpleFunction(description = "Generate Watermark GPS Camera")
@@ -42,7 +44,6 @@ public class GPSExtension extends AndroidNonvisibleComponent {
                     if (original == null) throw new Exception("Foto tidak ditemukan");
 
                     Bitmap bitmap = original.copy(Bitmap.Config.ARGB_8888, true);
-                    // Recycle original karena kita sudah punya salinan 'bitmap' untuk dimodifikasi
                     original.recycle(); 
 
                     android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
@@ -50,20 +51,22 @@ public class GPSExtension extends AndroidNonvisibleComponent {
                     drawByTemplate(canvas, finalAddress, inputLat, inputLong, inputDateTime,
                             bitmap.getWidth(), bitmap.getHeight());
 
-                    // --- PROSES SIMPAN KE INTERNAL (PRIVATE) ---
-                    java.io.File internalDir = container.$context().getFilesDir(); 
+                    // --- PERBAIKAN DI SINI ---
+                    // Gunakan form.$context() karena form sudah tersedia dari parent class
+                    android.content.Context context = form.$context();
+                    java.io.File internalDir = context.getFilesDir(); 
+                    
                     if (!internalDir.exists()) internalDir.mkdirs();
 
                     java.io.File outFile = new java.io.File(internalDir, fileName);
-
                     java.io.FileOutputStream out = new java.io.FileOutputStream(outFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out);
                     out.close();
                     
-                    // Recycle hasil proses setelah disimpan ke file
                     bitmap.recycle(); 
 
                     final String savedPath = outFile.getAbsolutePath();
+                    // -------------------------
 
                     form.runOnUiThread(new Runnable() {
                         @Override
